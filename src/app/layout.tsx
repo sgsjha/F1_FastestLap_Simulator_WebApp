@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "F1 Fastest Lap Simulator",
-  description: "A simulator for the fastest laps in F1 history",
+  description: "A simulator for the fastest laps in F1's 10-year history",
 };
 
 export default function RootLayout({
