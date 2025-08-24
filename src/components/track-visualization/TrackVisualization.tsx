@@ -404,18 +404,27 @@ export function TrackVisualization({}: TrackVisualizationProps) {
   // Animation loop
   const animate = (timestamp: number) => {
     if (!lastTimestampRef.current) lastTimestampRef.current = timestamp;
-    const deltaTime =
-      Math.min(0.05, (timestamp - lastTimestampRef.current) / 1000) *
-      animationState.speed;
+    const deltaTime = (timestamp - lastTimestampRef.current) / 1000; // Delta time in seconds
     lastTimestampRef.current = timestamp;
 
-    if (animationState.isPlaying) {
+    if (animationState.isPlaying && processedDrivers.length > 0) {
+      // Find the maximum lap duration among all drivers (in milliseconds)
+      const maxLapDuration = Math.max(
+        ...processedDrivers.map((d) => d.lapDuration)
+      );
+
+      // Calculate progress increment based on actual lap time
+      // deltaTime is in seconds, maxLapDuration is in milliseconds
+      // So we need to convert: progressIncrement = deltaTime / (maxLapDuration / 1000)
+      const progressIncrement =
+        (deltaTime / maxLapDuration) * animationState.speed;
+
       setAnimationState((prev) => ({
         ...prev,
         progress:
           prev.progress >= 1
             ? 0
-            : Math.min(1, prev.progress + 0.01 * prev.speed),
+            : Math.min(1, prev.progress + progressIncrement),
       }));
     }
 
