@@ -1,7 +1,8 @@
 import { Session, Driver, LapData, LocationData } from "@/lib/types";
 
-
-const API_BASE = process.env.NEXT_PUBLIC_OPENF1_API_URL;
+// Use env if provided, else fallback to public OpenF1 API
+const API_BASE =
+  (process.env.NEXT_PUBLIC_OPENF1_API_URL || "https://api.openf1.org/v1").replace(/\/$/, "");
 
 
 export const f1Api = {
@@ -38,7 +39,9 @@ export const f1Api = {
     endTime: string
   ): Promise<LocationData[]> => {
     const response = await fetch(
-      `${API_BASE}/location?session_key=${sessionKey}&driver_number=${driverNumber}&date>=${startTime}&date<=${endTime}`
+      `${API_BASE}/location?session_key=${sessionKey}&driver_number=${driverNumber}&date>=${encodeURIComponent(
+        startTime
+      )}&date<=${encodeURIComponent(endTime)}`
     );
     if (!response.ok) throw new Error('Failed to fetch location data');
     return response.json();

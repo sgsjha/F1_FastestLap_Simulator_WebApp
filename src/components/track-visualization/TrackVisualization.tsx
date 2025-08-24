@@ -4,12 +4,12 @@ import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { f1Api } from "@/lib/api/openf1";
 import { useRaceStore } from "@/lib/store/raceStore";
+import { calculateFastestLap } from "@/lib/utils/lapCalculator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import { Play, Pause, RotateCcw, Zap } from "lucide-react";
-import { calculateFastestLap } from "@/lib/utils/lapCalculator";
 
 interface AnimationState {
   isPlaying: boolean;
@@ -17,23 +17,64 @@ interface AnimationState {
   speed: number;
 }
 
-export function TrackVisualization() {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const animationRef = useRef<number | null>(null);
+interface GPSPoint {
+  date: string;
+  x: number;
+  y: number;
+  z: number;
+  elapsed: number;
+}
+
+interface ProcessedDriverData {
+  driverNumber: number;
+  acronym: string;
+  name: string;
+  team: string;
+  color: string;
+  locations: GPSPoint[];
+  lapDuration: number;
+}
+
+interface TrackVisualizationProps {
+  selectedSession?: {
+    session_key: number;
+    location: string;
+    session_name: string;
+  } | null;
+  selectedDrivers?: number[];
+  locationData?: Record<number, GPSPoint[]>;
+  driverData?: Array<{
+    driver_number: number;
+    name_acronym: string;
+    full_name: string;
+    team_name: string;
+    team_colour: string;
+  }>;
+  isLoading?: boolean;
+}
+
+export function TrackVisualization({}: TrackVisualizationProps) {
+  // Source of truth: app store and queries
   const { selectedSession, selectedDrivers } = useRaceStore();
 
-  const [animationState, setAnimationState] = useState<AnimationState>({
-    isPlaying: false,
-    progress: 0,
-    speed: 1,
+  const {
+    data: driverData = [],
+    isLoading: isDriversLoading,
+    error: driversError,
+  } = useQuery({
+    queryKey: ["drivers", selectedSession?.session_key],
+    queryFn: () =>
+      selectedSession
+        ? f1Api.getDrivers(selectedSession.session_key)
+        : Promise.resolve([]),
+    enabled: !!selectedSession,
   });
 
-  // Query lap data for selected drivers
-  const { data: allLapData, isLoading } = useQuery({
+  const { data: allLapData = {}, isLoading: isLapsLoading } = useQuery({
     queryKey: ["laps", selectedSession?.session_key, selectedDrivers],
     queryFn: async () => {
-      if (!selectedSession || selectedDrivers.length === 0) return {};
-
+      if (!selectedSession || selectedDrivers.length === 0)
+        return {} as Record<number, any[]>;
       const lapPromises = selectedDrivers.map(async (driverNumber) => {
         const laps = await f1Api.getLaps(
           selectedSession.session_key,
@@ -41,7 +82,6 @@ export function TrackVisualization() {
         );
         return { driverNumber, laps };
       });
-
       const results = await Promise.all(lapPromises);
       return results.reduce((acc, { driverNumber, laps }) => {
         acc[driverNumber] = laps;
@@ -51,8 +91,7 @@ export function TrackVisualization() {
     enabled: !!(selectedSession && selectedDrivers.length > 0),
   });
 
-  // Query location data for fastest laps
-  const { data: locationData } = useQuery({
+  const { data: locationData = {}, isLoading: isLocationsLoading } = useQuery({
     queryKey: [
       "locations",
       selectedSession?.session_key,
@@ -60,90 +99,100 @@ export function TrackVisualization() {
       allLapData,
     ],
     queryFn: async () => {
-      if (!selectedSession || selectedDrivers.length === 0 || !allLapData)
-        return {};
-
-      const locationPromises = selectedDrivers.map(async (driverNumber) => {
-        const laps = allLapData[driverNumber];
-        if (!laps) return { driverNumber, locations: [] };
-
+      if (!selectedSession || selectedDrivers.length === 0)
+        return {} as Record<number, GPSPoint[]>;
+      const locPromises = selectedDrivers.map(async (driverNumber) => {
+        const laps = (allLapData as Record<number, any[]>)[driverNumber];
+        if (!laps || laps.length === 0)
+          return { driverNumber, locations: [] as GPSPoint[] };
         try {
-          const fastestLapInfo = calculateFastestLap(laps);
-          const locations = await f1Api.getLocationData(
+          const fastest = calculateFastestLap(laps);
+          const points = await f1Api.getLocationData(
             selectedSession.session_key,
             driverNumber,
-            fastestLapInfo.fastestLap.startTime,
-            fastestLapInfo.fastestLap.endTime
+            fastest.fastestLap.startTime,
+            fastest.fastestLap.endTime
           );
-
-          return {
-            driverNumber,
-            locations: locations.map((loc) => ({
-              ...loc,
-              elapsed:
-                (new Date(loc.date).getTime() -
-                  new Date(locations[0].date).getTime()) /
-                1000,
-            })),
-          };
-        } catch (error) {
-          console.error(
-            `Failed to get location data for driver ${driverNumber}:`,
-            error
-          );
-          return { driverNumber, locations: [] };
+          const start = points[0]?.date
+            ? new Date(points[0].date).getTime()
+            : 0;
+          const withElapsed: GPSPoint[] = points.map((p) => ({
+            ...p,
+            elapsed: start ? (new Date(p.date).getTime() - start) / 1000 : 0,
+          }));
+          return { driverNumber, locations: withElapsed };
+        } catch (e) {
+          console.error("location fetch failed", e);
+          return { driverNumber, locations: [] as GPSPoint[] };
         }
       });
-
-      const results = await Promise.all(locationPromises);
+      const results = await Promise.all(locPromises);
       return results.reduce((acc, { driverNumber, locations }) => {
         acc[driverNumber] = locations;
         return acc;
-      }, {} as Record<number, any[]>);
+      }, {} as Record<number, GPSPoint[]>);
     },
-    enabled: !!(selectedSession && selectedDrivers.length > 0 && allLapData),
+    enabled: !!(
+      selectedSession &&
+      selectedDrivers.length > 0 &&
+      Object.keys(allLapData || {}).length > 0
+    ),
   });
 
-  // Canvas setup and bounds calculation
-  const setupCanvas = () => {
-    const canvas = canvasRef.current;
-    if (!canvas || !locationData) return null;
+  const isLoading = isDriversLoading || isLapsLoading || isLocationsLoading;
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const animationRef = useRef<number | null>(null);
+  const lastTimestampRef = useRef<number>(0);
 
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return null;
+  const [animationState, setAnimationState] = useState<AnimationState>({
+    isPlaying: false,
+    progress: 0,
+    speed: 1,
+  });
 
-    // Calculate bounds from all location data
+  // Process driver data
+  const processedDrivers: ProcessedDriverData[] = selectedDrivers
+    .map((driverNumber) => {
+      const driver = driverData.find((d) => d.driver_number === driverNumber);
+      const locations = locationData[driverNumber] || [];
+
+      return {
+        driverNumber,
+        acronym: driver?.name_acronym || `#${driverNumber}`,
+        name: driver?.full_name || `Driver ${driverNumber}`,
+        team: driver?.team_name || "Unknown",
+        color: driver?.team_colour || getDriverColor(driverNumber),
+        locations,
+        lapDuration:
+          locations.length > 0 ? locations[locations.length - 1].elapsed : 0,
+      };
+    })
+    .filter((d) => d.locations.length > 0);
+
+  // Calculate track bounds
+  const bounds = (() => {
     let minX = Infinity,
       minY = Infinity,
       maxX = -Infinity,
       maxY = -Infinity;
 
-    Object.values(locationData).forEach((locations: any[]) => {
-      locations.forEach((point) => {
-        minX = Math.min(minX, point.x);
-        minY = Math.min(minY, point.y);
-        maxX = Math.max(maxX, point.x);
-        maxY = Math.max(maxY, point.y);
+    processedDrivers.forEach((driver) => {
+      driver.locations.forEach((point) => {
+        if (point.x < minX) minX = point.x;
+        if (point.y < minY) minY = point.y;
+        if (point.x > maxX) maxX = point.x;
+        if (point.y > maxY) maxY = point.y;
       });
     });
 
-    if (!isFinite(minX)) return null;
-
-    const bounds = { minX, minY, maxX, maxY };
-
-    // Set canvas size and DPI
-    const rect = canvas.getBoundingClientRect();
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width = rect.width * dpr;
-    canvas.height = rect.height * dpr;
-    ctx.scale(dpr, dpr);
-
-    return { ctx, bounds };
-  };
+    return isFinite(minX) ? { minX, minY, maxX, maxY } : null;
+  })();
 
   // World to canvas coordinate conversion
-  const worldToCanvas = (x: number, y: number, bounds: any) => {
-    const canvas = canvasRef.current!;
+  const worldToCanvas = (x: number, y: number) => {
+    const canvas = canvasRef.current;
+    if (!canvas || !bounds) return [0, 0];
+
     const rect = canvas.getBoundingClientRect();
     const padding = 40;
 
@@ -157,13 +206,33 @@ export function TrackVisualization() {
     return [canvasX, canvasY];
   };
 
-  // Draw track
-  const drawTrack = (ctx: CanvasRenderingContext2D, bounds: any) => {
-    if (!locationData || Object.keys(locationData).length === 0) return;
+  // Setup canvas
+  const setupCanvas = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return null;
 
-    // Use first driver's locations to draw track outline
-    const firstDriverLocations = Object.values(locationData)[0] as any[];
-    if (!firstDriverLocations || firstDriverLocations.length === 0) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return null;
+
+    const dpr = Math.min(
+      2,
+      typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1
+    );
+    const rect = canvas.getBoundingClientRect();
+
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    return ctx;
+  };
+
+  // Draw track
+  const drawTrack = (ctx: CanvasRenderingContext2D) => {
+    if (processedDrivers.length === 0) return;
+
+    // Use first driver's locations for track outline
+    const trackPoints = processedDrivers[0].locations;
 
     ctx.save();
     ctx.strokeStyle = "#374151";
@@ -171,170 +240,230 @@ export function TrackVisualization() {
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
 
-    // Draw track background
+    // Track background
     ctx.beginPath();
-    firstDriverLocations.forEach((point, idx) => {
-      const [x, y] = worldToCanvas(point.x, point.y, bounds);
+    trackPoints.forEach((point, idx) => {
+      const [x, y] = worldToCanvas(point.x, point.y);
       if (idx === 0) ctx.moveTo(x, y);
       else ctx.lineTo(x, y);
     });
     ctx.stroke();
 
-    // Draw track surface
+    // Track surface
     ctx.strokeStyle = "#4b5563";
     ctx.lineWidth = 14;
     ctx.beginPath();
-    firstDriverLocations.forEach((point, idx) => {
-      const [x, y] = worldToCanvas(point.x, point.y, bounds);
+    trackPoints.forEach((point, idx) => {
+      const [x, y] = worldToCanvas(point.x, point.y);
       if (idx === 0) ctx.moveTo(x, y);
       else ctx.lineTo(x, y);
     });
     ctx.stroke();
 
-    // Draw start/finish line
-    const startPoint = firstDriverLocations[0];
-    const [sx, sy] = worldToCanvas(startPoint.x, startPoint.y, bounds);
-    ctx.strokeStyle = "#ffffff";
-    ctx.lineWidth = 3;
-    ctx.setLineDash([8, 8]);
-    ctx.beginPath();
-    ctx.moveTo(sx - 12, sy - 12);
-    ctx.lineTo(sx + 12, sy + 12);
-    ctx.stroke();
-    ctx.setLineDash([]);
+    // Start/finish line
+    if (trackPoints.length > 0) {
+      const [sx, sy] = worldToCanvas(trackPoints[0].x, trackPoints[0].y);
+      ctx.strokeStyle = "#ffffff";
+      ctx.lineWidth = 3;
+      ctx.setLineDash([8, 8]);
+      ctx.beginPath();
+      ctx.moveTo(sx - 12, sy - 12);
+      ctx.lineTo(sx + 12, sy + 12);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
 
     ctx.restore();
   };
 
+  // Get car position at progress
+  const getCarPosition = (driver: ProcessedDriverData, progress: number) => {
+    const { locations } = driver;
+    if (locations.length === 0) return null;
+
+    const maxTime = Math.max(...locations.map((l) => l.elapsed));
+    const targetTime = progress * maxTime;
+
+    // Find interpolated position
+    for (let i = 0; i < locations.length - 1; i++) {
+      if (
+        locations[i].elapsed <= targetTime &&
+        locations[i + 1].elapsed >= targetTime
+      ) {
+        const t =
+          (targetTime - locations[i].elapsed) /
+          (locations[i + 1].elapsed - locations[i].elapsed);
+        return {
+          x: locations[i].x + (locations[i + 1].x - locations[i].x) * t,
+          y: locations[i].y + (locations[i + 1].y - locations[i].y) * t,
+          elapsed: targetTime,
+        };
+      }
+    }
+
+    return locations[locations.length - 1];
+  };
+
   // Draw cars
-  const drawCars = (
+  const drawCars = (ctx: CanvasRenderingContext2D, progress: number) => {
+    processedDrivers.forEach((driver, index) => {
+      const position = getCarPosition(driver, progress);
+      if (!position) return;
+
+      const [x, y] = worldToCanvas(position.x, position.y);
+
+      ctx.save();
+
+      // Car body
+      ctx.fillStyle = `#${driver.color}`;
+      ctx.beginPath();
+      ctx.arc(x, y, 8, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Car outline
+      ctx.strokeStyle = "#ffffff";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Driver acronym
+      ctx.font = "600 12px ui-sans-serif, system-ui";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "bottom";
+      ctx.fillStyle = "#ffffffde";
+      ctx.fillText(driver.acronym, x, y - 12);
+
+      ctx.restore();
+    });
+  };
+
+  // Draw trajectory lines
+  const drawTrajectories = (
     ctx: CanvasRenderingContext2D,
-    bounds: any,
     progress: number
   ) => {
-    if (!locationData) return;
+    processedDrivers.forEach((driver) => {
+      const maxTime = Math.max(...driver.locations.map((l) => l.elapsed));
+      const currentTime = progress * maxTime;
 
-    Object.entries(locationData).forEach(
-      ([driverNumber, locations]: [string, any]) => {
-        if (!locations || locations.length === 0) return;
+      ctx.save();
+      ctx.strokeStyle = `#${driver.color}66`; // Semi-transparent
+      ctx.lineWidth = 2;
+      ctx.beginPath();
 
-        // Get driver info for color
-        const driver = selectedDrivers.includes(parseInt(driverNumber))
-          ? { team_colour: getDriverColor(parseInt(driverNumber)) }
-          : null;
-
-        if (!driver) return;
-
-        // Calculate position based on progress
-        const maxTime = Math.max(...locations.map((l: any) => l.elapsed));
-        const targetTime = progress * maxTime;
-
-        // Find interpolated position
-        let position = locations[0];
-        for (let i = 0; i < locations.length - 1; i++) {
-          if (
-            locations[i].elapsed <= targetTime &&
-            locations[i + 1].elapsed >= targetTime
-          ) {
-            const t =
-              (targetTime - locations[i].elapsed) /
-              (locations[i + 1].elapsed - locations[i].elapsed);
-            position = {
-              x: locations[i].x + (locations[i + 1].x - locations[i].x) * t,
-              y: locations[i].y + (locations[i + 1].y - locations[i].y) * t,
-            };
-            break;
+      let hasStarted = false;
+      driver.locations.forEach((point) => {
+        if (point.elapsed <= currentTime) {
+          const [x, y] = worldToCanvas(point.x, point.y);
+          if (!hasStarted) {
+            ctx.moveTo(x, y);
+            hasStarted = true;
+          } else {
+            ctx.lineTo(x, y);
           }
         }
+      });
 
-        const [x, y] = worldToCanvas(position.x, position.y, bounds);
+      ctx.stroke();
+      ctx.restore();
+    });
+  };
 
-        ctx.save();
-        ctx.fillStyle = `#${driver.team_colour}`;
-        ctx.beginPath();
-        ctx.arc(x, y, 8, 0, Math.PI * 2);
-        ctx.fill();
+  // Main render function
+  const render = () => {
+    const ctx = setupCanvas();
+    if (!ctx || !bounds) return;
 
-        ctx.strokeStyle = "#ffffff";
-        ctx.lineWidth = 2;
-        ctx.stroke();
-        ctx.restore();
-      }
-    );
+    const canvas = canvasRef.current!;
+    const rect = canvas.getBoundingClientRect();
+
+    // Clear canvas
+    ctx.clearRect(0, 0, rect.width, rect.height);
+
+    // Background grid
+    ctx.save();
+    ctx.globalAlpha = 0.06;
+    ctx.fillStyle = "#ffffff";
+    for (let i = 0; i < rect.width; i += 50) {
+      ctx.fillRect(i, 0, 1, rect.height);
+    }
+    for (let j = 0; j < rect.height; j += 50) {
+      ctx.fillRect(0, j, rect.width, 1);
+    }
+    ctx.restore();
+
+    // Draw track
+    drawTrack(ctx);
+
+    // Draw trajectories
+    drawTrajectories(ctx, animationState.progress);
+
+    // Draw cars
+    drawCars(ctx, animationState.progress);
   };
 
   // Animation loop
-  const animate = () => {
-    if (!animationState.isPlaying) return;
+  const animate = (timestamp: number) => {
+    if (!lastTimestampRef.current) lastTimestampRef.current = timestamp;
+    const deltaTime =
+      Math.min(0.05, (timestamp - lastTimestampRef.current) / 1000) *
+      animationState.speed;
+    lastTimestampRef.current = timestamp;
 
-    const setup = setupCanvas();
-    if (!setup) return;
+    if (animationState.isPlaying) {
+      setAnimationState((prev) => ({
+        ...prev,
+        progress:
+          prev.progress >= 1
+            ? 0
+            : Math.min(1, prev.progress + 0.01 * prev.speed),
+      }));
+    }
 
-    const { ctx, bounds } = setup;
-
-    // Clear canvas
-    ctx.clearRect(
-      0,
-      0,
-      ctx.canvas.width / window.devicePixelRatio,
-      ctx.canvas.height / window.devicePixelRatio
-    );
-
-    // Draw track
-    drawTrack(ctx, bounds);
-
-    // Draw cars
-    drawCars(ctx, bounds, animationState.progress);
-
-    // Update progress
-    setAnimationState((prev) => ({
-      ...prev,
-      progress: prev.progress >= 1 ? 0 : prev.progress + 0.01 * prev.speed,
-    }));
-
+    render();
     animationRef.current = requestAnimationFrame(animate);
   };
 
   // Start/stop animation
   useEffect(() => {
-    if (animationState.isPlaying) {
+    if (processedDrivers.length > 0) {
+      if (animationRef.current) cancelAnimationFrame(animationRef.current);
       animationRef.current = requestAnimationFrame(animate);
-    } else {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
     }
 
     return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
+      if (animationRef.current) cancelAnimationFrame(animationRef.current);
     };
-  }, [animationState.isPlaying, locationData]);
+  }, [processedDrivers]);
 
-  // Static render when not animating
+  // Restart/stop loop on play state or speed change
   useEffect(() => {
-    if (!animationState.isPlaying) {
-      const setup = setupCanvas();
-      if (setup) {
-        const { ctx, bounds } = setup;
-        ctx.clearRect(
-          0,
-          0,
-          ctx.canvas.width / window.devicePixelRatio,
-          ctx.canvas.height / window.devicePixelRatio
-        );
-        drawTrack(ctx, bounds);
-        drawCars(ctx, bounds, animationState.progress);
-      }
-    }
-  }, [locationData, animationState.progress, animationState.isPlaying]);
+    if (processedDrivers.length === 0) return;
+    if (animationRef.current) cancelAnimationFrame(animationRef.current);
+    animationRef.current = requestAnimationFrame(animate);
+    return () => {
+      if (animationRef.current) cancelAnimationFrame(animationRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [animationState.isPlaying, animationState.speed]);
 
-  const getDriverColor = (driverNumber: number) => {
-    // Fallback colors if we don't have driver data yet
-    const colors = ["ED1131", "FF8000", "005AFF", "2D826D", "DC143C", "F58020"];
-    return colors[driverNumber % colors.length];
-  };
+  // Auto-start animation when drivers with GPS data become available
+  useEffect(() => {
+    if (processedDrivers.length > 0 && !animationState.isPlaying) {
+      setAnimationState((prev) => ({ ...prev, isPlaying: true, progress: 0 }));
+    }
+  }, [processedDrivers.length]);
+
+  // Render on data change
+  useEffect(() => {
+    render();
+  }, [locationData, animationState.progress]);
+
+  // Resize handler
+  useEffect(() => {
+    const handleResize = () => render();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   const togglePlayPause = () => {
     setAnimationState((prev) => ({ ...prev, isPlaying: !prev.isPlaying }));
@@ -343,6 +472,12 @@ export function TrackVisualization() {
   const resetAnimation = () => {
     setAnimationState((prev) => ({ ...prev, isPlaying: false, progress: 0 }));
   };
+
+  // Fallback colors
+  function getDriverColor(driverNumber: number): string {
+    const colors = ["ED1131", "FF8000", "005AFF", "2D826D", "DC143C", "F58020"];
+    return colors[driverNumber % colors.length];
+  }
 
   if (!selectedSession) {
     return (
@@ -393,7 +528,7 @@ export function TrackVisualization() {
               variant="outline"
               size="sm"
               onClick={togglePlayPause}
-              disabled={isLoading}
+              disabled={isLoading || processedDrivers.length === 0}
             >
               {animationState.isPlaying ? (
                 <Pause className="w-4 h-4" />
@@ -406,7 +541,7 @@ export function TrackVisualization() {
               variant="outline"
               size="sm"
               onClick={resetAnimation}
-              disabled={isLoading}
+              disabled={isLoading || processedDrivers.length === 0}
             >
               <RotateCcw className="w-4 h-4" />
             </Button>
@@ -421,6 +556,14 @@ export function TrackVisualization() {
               <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
               <p className="text-sm text-muted-foreground">
                 Loading track data...
+              </p>
+            </div>
+          </div>
+        ) : processedDrivers.length === 0 ? (
+          <div className="h-[500px] flex items-center justify-center bg-muted/20 rounded-lg">
+            <div className="text-center">
+              <p className="text-muted-foreground">
+                No GPS data available for selected drivers
               </p>
             </div>
           </div>
@@ -477,6 +620,24 @@ export function TrackVisualization() {
                   />
                 </div>
               </div>
+
+              {processedDrivers.length > 0 && (
+                <div className="flex gap-2 flex-wrap">
+                  {processedDrivers.map((driver) => (
+                    <Badge
+                      key={driver.driverNumber}
+                      variant="outline"
+                      className="text-xs"
+                    >
+                      <div
+                        className="w-2 h-2 rounded-full mr-1"
+                        style={{ backgroundColor: `#${driver.color}` }}
+                      />
+                      {driver.acronym}
+                    </Badge>
+                  ))}
+                </div>
+              )}
             </div>
           </>
         )}
