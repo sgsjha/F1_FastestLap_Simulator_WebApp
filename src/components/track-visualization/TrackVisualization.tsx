@@ -233,17 +233,25 @@ export function TrackVisualization({}: TrackVisualizationProps) {
     return ctx;
   };
 
-  // Draw track
+  // Draw track (zoom-scaled thickness)
   const drawTrack = (ctx: CanvasRenderingContext2D) => {
     if (processedDrivers.length === 0) return;
     const trackPoints = processedDrivers[0].locations;
+    const z = cameraRef.current.zoom;
+
+    // helpers to clamp widths
+    const bgWidth = Math.max(6, Math.min(40, 20 * z)); // was 20
+    const fgWidth = Math.max(4, Math.min(30, 14 * z)); // was 14
+    const sfWidth = Math.max(2, Math.min(6, 3 * z)); // was 3
+    const dashLen = 8 * Math.max(0.6, Math.min(1.8, z)); // scale dash a bit
 
     ctx.save();
-    ctx.strokeStyle = "#374151";
-    ctx.lineWidth = 20;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
 
+    // Track background
+    ctx.strokeStyle = "#374151";
+    ctx.lineWidth = bgWidth;
     ctx.beginPath();
     trackPoints.forEach((p, i) => {
       const [x, y] = worldToCanvas(p.x, p.y);
@@ -252,8 +260,9 @@ export function TrackVisualization({}: TrackVisualizationProps) {
     });
     ctx.stroke();
 
+    // Track surface
     ctx.strokeStyle = "#4b5563";
-    ctx.lineWidth = 14;
+    ctx.lineWidth = fgWidth;
     ctx.beginPath();
     trackPoints.forEach((p, i) => {
       const [x, y] = worldToCanvas(p.x, p.y);
@@ -266,14 +275,15 @@ export function TrackVisualization({}: TrackVisualizationProps) {
     if (trackPoints.length > 0) {
       const [sx, sy] = worldToCanvas(trackPoints[0].x, trackPoints[0].y);
       ctx.strokeStyle = "#ffffff";
-      ctx.lineWidth = 3;
-      ctx.setLineDash([8, 8]);
+      ctx.lineWidth = sfWidth;
+      ctx.setLineDash([dashLen, dashLen]);
       ctx.beginPath();
       ctx.moveTo(sx - 12, sy - 12);
       ctx.lineTo(sx + 12, sy + 12);
       ctx.stroke();
       ctx.setLineDash([]);
     }
+
     ctx.restore();
   };
 
@@ -300,31 +310,41 @@ export function TrackVisualization({}: TrackVisualizationProps) {
     return locations[locations.length - 1];
   };
 
-  // Draw cars
+  // Draw cars (zoom-scaled size & outline)
   const drawCars = (ctx: CanvasRenderingContext2D, progress: number) => {
+    const z = cameraRef.current.zoom;
+    const radius = Math.max(4, Math.min(16, 8 * z)); // was 8
+    const outline = Math.max(1, Math.min(3, 2 * z)); // was 2
+    const labelSize = Math.round(
+      Math.max(10, Math.min(16, 12 * (0.9 + 0.2 * z)))
+    );
+    const labelOffset = Math.max(10, Math.min(18, 12 * (0.9 + 0.2 * z)));
+
     processedDrivers.forEach((driver) => {
       const pos = getCarPosition(driver, progress);
       if (!pos) return;
       const [x, y] = worldToCanvas(pos.x, pos.y);
 
       ctx.save();
+
       // car dot
       ctx.fillStyle = `#${driver.color}`;
       ctx.beginPath();
-      ctx.arc(x, y, 8, 0, Math.PI * 2);
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
       ctx.fill();
 
       // outline
       ctx.strokeStyle = "#ffffff";
-      ctx.lineWidth = 2;
+      ctx.lineWidth = outline;
       ctx.stroke();
 
       // label
-      ctx.font = "600 12px ui-sans-serif, system-ui";
+      ctx.font = `600 ${labelSize}px ui-sans-serif, system-ui`;
       ctx.textAlign = "center";
       ctx.textBaseline = "bottom";
       ctx.fillStyle = "#ffffffde";
-      ctx.fillText(driver.acronym, x, y - 12);
+      ctx.fillText(driver.acronym, x, y - labelOffset);
+
       ctx.restore();
     });
   };
