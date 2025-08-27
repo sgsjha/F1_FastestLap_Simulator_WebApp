@@ -46,4 +46,65 @@ export const f1Api = {
     if (!response.ok) throw new Error('Failed to fetch location data');
     return response.json();
   }
+,
+  // Get car telemetry data for a given driver and time window
+  getCarData: async (
+    sessionKey: number,
+    driverNumber: number,
+    startTime: string,
+    endTime: string
+  ): Promise<any[]> => {
+    // ✅ Operators unencoded in the key; only encode values
+    const url =
+      `${API_BASE}/car_data?session_key=${sessionKey}` +
+      `&driver_number=${driverNumber}` +
+      `&date>=${encodeURIComponent(startTime)}` +
+      `&date<=${encodeURIComponent(endTime)}`;
+
+    // eslint-disable-next-line no-console
+    console.debug('openf1.getCarData fetching', url);
+    const res = await fetch(url);
+    if (res.ok) return res.json();
+    const body = await res.text().catch(() => '');
+    throw new Error(`Failed to fetch car data status=${res.status} body=${body}`);
+  }
+
+  // Diagnostic: fetch raw response text and status for car_data (no JSON parse)
+  ,getCarDataRaw: async (
+    sessionKey: number,
+    driverNumber: number,
+    startTime: string,
+    endTime: string
+  ) => {
+    const dateGteKeyEncoded = encodeURIComponent("date>=");
+    const dateLteKeyEncoded = encodeURIComponent("date<=");
+    const encodedUrl = `${API_BASE}/car_data?session_key=${sessionKey}&driver_number=${driverNumber}&${dateGteKeyEncoded}=${encodeURIComponent(
+      startTime
+    )}&${dateLteKeyEncoded}=${encodeURIComponent(endTime)}`;
+    const rawUrl = `${API_BASE}/car_data?session_key=${sessionKey}&driver_number=${driverNumber}&date>=${encodeURIComponent(
+      startTime
+    )}&date<=${encodeURIComponent(endTime)}`;
+    console.log(rawUrl) //i added just now
+
+    const attempts: Array<{ url: string; status?: number; body?: string; error?: any }> = [];
+    try {
+      const r = await fetch(encodedUrl);
+      const b = await r.text().catch(() => "");
+      attempts.push({ url: encodedUrl, status: r.status, body: b });
+      if (r.ok) return { ok: true, attempts };
+    } catch (e) {
+      attempts.push({ url: encodedUrl, error: String(e) });
+    }
+
+    try {
+      const r2 = await fetch(rawUrl);
+      const b2 = await r2.text().catch(() => "");
+      attempts.push({ url: rawUrl, status: r2.status, body: b2 });
+      if (r2.ok) return { ok: true, attempts };
+    } catch (e) {
+      attempts.push({ url: rawUrl, error: String(e) });
+    }
+
+    return { ok: false, attempts };
+  }
 };
