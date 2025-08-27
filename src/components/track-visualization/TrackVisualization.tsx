@@ -144,11 +144,14 @@ export function TrackVisualization({}: TrackVisualizationProps) {
         }, {} as Record<number, GPSPoint[]>);
       }
 
-      // Keep the fastestPoints as the canonical spatial path (elapsed is relative to the fastest lap)
-      const fastestMaxElapsed = fastestPoints.length > 0 ? Math.max(...fastestPoints.map((p) => p.elapsed)) : 0;
+  // Keep the fastestPoints as the canonical spatial path (elapsed is relative to the fastest lap)
+  const fastestMaxElapsed = fastestPoints.length > 0 ? Math.max(...fastestPoints.map((p) => p.elapsed)) : 0;
 
-      // Set the master lap time (seconds) to the fastest lap's lapTime
-      masterLapTimeRef.current = fastestDriverEntry.fastest.lapTime;
+  // Set the master lap time (seconds) to the slowest lap time among selected drivers
+  // so the timeline runs until the slowest driver completes their lap. Fastest
+  // drivers will reach their end earlier and remain at the finish line.
+  const slowestLapTime = Math.max(...perDriverFastest.map((d) => d.fastest.lapTime));
+  masterLapTimeRef.current = slowestLapTime;
 
       // For each driver, return the same spatial points (no per-point scaling).
       // We'll use each driver's lapDuration for pacing when rendering.
@@ -411,9 +414,15 @@ export function TrackVisualization({}: TrackVisualizationProps) {
     ctx: CanvasRenderingContext2D,
     progress: number
   ) => {
+    // Use master timeline to draw each driver's trajectory up to their own progress.
+    // This ensures slower drivers' traces continue after faster drivers finish.
+    const masterLap = masterLapTimeRef.current ?? 0;
+    const masterElapsed = progress * masterLap;
+
     processedDrivers.forEach((driver) => {
-      const maxTime = Math.max(...driver.locations.map((l) => l.elapsed));
-      const currentTime = progress * maxTime;
+      const fastestMax = Math.max(...driver.locations.map((l) => l.elapsed));
+      const driverFrac = driver.lapDuration > 0 ? Math.min(1, masterElapsed / driver.lapDuration) : Math.min(1, progress);
+      const currentTime = driverFrac * fastestMax;
 
       ctx.save();
       ctx.strokeStyle = `#${driver.color}66`;
@@ -468,7 +477,7 @@ export function TrackVisualization({}: TrackVisualizationProps) {
     lastTimestampRef.current = ts;
 
     if (animationState.isPlaying && processedDrivers.length > 0) {
-      // use master (fastest) lap time as canonical timeline; fallback to max driver lap
+      // use master (slowest) lap time as canonical timeline; fallback to max driver lap
       const master = masterLapTimeRef.current ?? Math.max(...processedDrivers.map((d) => d.lapDuration));
       const denom = Math.max(master, 0.0001);
       const progressIncrement = (deltaTime / denom) * animationState.speed;
@@ -483,7 +492,7 @@ export function TrackVisualization({}: TrackVisualizationProps) {
         }));
       }
       if (next >= 1) {
-        // Stop at end
+        // Stop at end of slowest lap
         setAnimationState((prev) => ({ ...prev, isPlaying: false }));
       }
     }
