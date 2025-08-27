@@ -101,36 +101,68 @@ export function TrackVisualization({}: TrackVisualizationProps) {
     queryFn: async () => {
       if (!selectedSession || selectedDrivers.length === 0)
         return {} as Record<number, GPSPoint[]>;
-      const locPromises = selectedDrivers.map(async (driverNumber) => {
+
+      // Compute each driver's fastest lap info from provided laps
+      const perDriverFastest = selectedDrivers.map((driverNumber) => {
         const laps = (allLapData as Record<number, any[]>)[driverNumber];
-        if (!laps || laps.length === 0)
-          return { driverNumber, locations: [] as GPSPoint[] };
+        if (!laps || laps.length === 0) return { driverNumber, error: true };
         try {
           const fastest = calculateFastestLap(laps);
-          const points = await f1Api.getLocationData(
-            selectedSession.session_key,
-            driverNumber,
-            fastest.fastestLap.startTime,
-            fastest.fastestLap.endTime
-          );
-          const start = points[0]?.date
-            ? new Date(points[0].date).getTime()
-            : 0;
-          const withElapsed: GPSPoint[] = points.map((p) => ({
-            ...p,
-            elapsed: start ? (new Date(p.date).getTime() - start) / 1000 : 0,
-          }));
-          return { driverNumber, locations: withElapsed };
+          return { driverNumber, fastest: fastest.fastestLap };
         } catch (e) {
-          console.error("location fetch failed", e);
-          return { driverNumber, locations: [] as GPSPoint[] };
+          return { driverNumber, error: true };
         }
-      });
-      const results = await Promise.all(locPromises);
-      return results.reduce((acc, { driverNumber, locations }) => {
-        acc[driverNumber] = locations;
+      }).filter((d) => !('error' in d)) as Array<{ driverNumber: number; fastest: { lapTime: number; startTime: string; endTime: string } }>;
+
+      if (perDriverFastest.length === 0) return {} as Record<number, GPSPoint[]>;
+
+  // Find the overall fastest lap across selected drivers
+  perDriverFastest.sort((a, b) => a.fastest.lapTime - b.fastest.lapTime);
+  const fastestDriverEntry = perDriverFastest[0];
+  const fastestDriverNumber = fastestDriverEntry.driverNumber;
+
+  // Fetch location points once for the overall fastest driver's fastest lap
+  let fastestPoints: GPSPoint[] = [];
+      try {
+        const pts = await f1Api.getLocationData(
+          selectedSession.session_key,
+          fastestDriverNumber,
+          fastestDriverEntry.fastest.startTime,
+          fastestDriverEntry.fastest.endTime
+        );
+        const start = pts[0]?.date ? new Date(pts[0].date).getTime() : 0;
+        fastestPoints = pts.map((p) => ({
+          ...p,
+          elapsed: start ? (new Date(p.date).getTime() - start) / 1000 : 0,
+        }));
+      } catch (e) {
+        console.error("location fetch failed for fastest driver", e);
+        // return empty mappings
+        return selectedDrivers.reduce((acc, dn) => {
+          acc[dn] = [] as GPSPoint[];
+          return acc;
+        }, {} as Record<number, GPSPoint[]>);
+      }
+
+      // Keep the fastestPoints as the canonical spatial path (elapsed is relative to the fastest lap)
+      const fastestMaxElapsed = fastestPoints.length > 0 ? Math.max(...fastestPoints.map((p) => p.elapsed)) : 0;
+
+      // Set the master lap time (seconds) to the fastest lap's lapTime
+      masterLapTimeRef.current = fastestDriverEntry.fastest.lapTime;
+
+      // For each driver, return the same spatial points (no per-point scaling).
+      // We'll use each driver's lapDuration for pacing when rendering.
+      const result = selectedDrivers.reduce((acc, driverNumber) => {
+        const entry = perDriverFastest.find((d) => d.driverNumber === driverNumber);
+        if (!entry) {
+          acc[driverNumber] = [];
+          return acc;
+        }
+        acc[driverNumber] = fastestPoints;
         return acc;
       }, {} as Record<number, GPSPoint[]>);
+
+      return result;
     },
     enabled: !!(
       selectedSession &&
@@ -146,6 +178,8 @@ export function TrackVisualization({}: TrackVisualizationProps) {
   const lastTimestampRef = useRef<number>(0);
   const progressRef = useRef<number>(0);
   const lastUIUpdateRef = useRef<number>(0);
+  // master (fastest) lap time in seconds — used as the canonical timeline
+  const masterLapTimeRef = useRef<number | null>(null);
 
   const [animationState, setAnimationState] = useState<AnimationState>({
     isPlaying: false,
@@ -158,6 +192,21 @@ export function TrackVisualization({}: TrackVisualizationProps) {
     .map((driverNumber) => {
       const driver = driverData.find((d) => d.driver_number === driverNumber);
       const locations = locationData[driverNumber] || [];
+      // determine lapDuration (seconds) from provided lap data if available
+      let lapDuration = 0;
+      try {
+        const laps = (allLapData as Record<number, any[]>)[driverNumber];
+        if (laps && laps.length > 0) {
+          const fastest = calculateFastestLap(laps);
+          lapDuration = fastest.fastestLap.lapTime;
+        } else if (locations.length > 0) {
+          // fallback: use elapsed of last point (this will match fastest lap if no lap data)
+          lapDuration = locations[locations.length - 1].elapsed || 0;
+        }
+      } catch (e) {
+        lapDuration = locations.length > 0 ? locations[locations.length - 1].elapsed || 0 : 0;
+      }
+
       return {
         driverNumber,
         acronym: driver?.name_acronym || `#${driverNumber}`,
@@ -165,8 +214,7 @@ export function TrackVisualization({}: TrackVisualizationProps) {
         team: driver?.team_name || "Unknown",
         color: driver?.team_colour || getDriverColor(driverNumber),
         locations,
-        lapDuration:
-          locations.length > 0 ? locations[locations.length - 1].elapsed : 0, // seconds
+        lapDuration,
       };
     })
     .filter((d) => d.locations.length > 0);
@@ -289,11 +337,20 @@ export function TrackVisualization({}: TrackVisualizationProps) {
 
   // Interpolate position at progress
   const getCarPosition = (driver: ProcessedDriverData, progress: number) => {
-    const { locations } = driver;
+    const { locations, lapDuration } = driver;
     if (locations.length === 0) return null;
 
-    const maxTime = Math.max(...locations.map((l) => l.elapsed));
-    const targetTime = progress * maxTime;
+    // master lap time (seconds)
+    const masterLap = masterLapTimeRef.current ?? Math.max(...locations.map((l) => l.elapsed));
+    // elapsed time along master timeline
+    const masterElapsed = progress * masterLap;
+
+    // driver progress fraction (0..1) relative to their own lap duration
+    const driverFrac = lapDuration > 0 ? Math.min(1, masterElapsed / lapDuration) : Math.min(1, progress);
+
+    // map driverFrac back to fastestPoints elapsed (which are based on fastest lap)
+    const fastestMax = Math.max(...locations.map((l) => l.elapsed));
+    const targetTime = driverFrac * fastestMax;
 
     for (let i = 0; i < locations.length - 1; i++) {
       const a = locations[i];
@@ -411,11 +468,10 @@ export function TrackVisualization({}: TrackVisualizationProps) {
     lastTimestampRef.current = ts;
 
     if (animationState.isPlaying && processedDrivers.length > 0) {
-      const maxLapDuration = Math.max(
-        ...processedDrivers.map((d) => d.lapDuration)
-      ); // seconds
-      const progressIncrement =
-        (deltaTime / Math.max(maxLapDuration, 0.0001)) * animationState.speed;
+      // use master (fastest) lap time as canonical timeline; fallback to max driver lap
+      const master = masterLapTimeRef.current ?? Math.max(...processedDrivers.map((d) => d.lapDuration));
+      const denom = Math.max(master, 0.0001);
+      const progressIncrement = (deltaTime / denom) * animationState.speed;
       const next = Math.min(1, progressRef.current + progressIncrement);
       progressRef.current = next;
       // Lightly sync UI slider at ~6-10 fps to avoid re-render every frame
