@@ -11,9 +11,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, MapPin } from "lucide-react";
+import { MapPin } from "lucide-react";
 import { format } from "date-fns";
 
 const YEARS = [2025, 2024, 2023];
@@ -72,157 +71,86 @@ export function RaceSelector() {
 
   if (error) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="w-5 h-5" />
-            Select Race
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-destructive">
-            Failed to load sessions. Please try again.
-          </p>
-        </CardContent>
-      </Card>
+      <div className="text-sm text-red-400">Failed to load sessions.</div>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Calendar className="w-5 h-5" />
-          Select Race
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Year Selection */}
-        <div>
-          <label className="text-sm font-medium mb-2 block">Season</label>
-          <Select
-            value={selectedYear.toString()}
-            onValueChange={handleYearChange}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select year" />
-            </SelectTrigger>
-            <SelectContent>
-              {YEARS.map((year) => (
-                <SelectItem key={year} value={year.toString()}>
-                  {year} Season
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+    <div className="flex items-center gap-3">
+      {/* Year */}
+      <Select value={selectedYear.toString()} onValueChange={handleYearChange}>
+        <SelectTrigger className="h-9 min-w-[110px] bg-zinc-900/50 border border-zinc-700 text-zinc-100 hover:bg-zinc-800/60">
+          <SelectValue placeholder="Year" />
+        </SelectTrigger>
+        <SelectContent className="bg-zinc-900 border border-zinc-700 text-zinc-100">
+          {YEARS.map((year) => (
+            <SelectItem key={year} value={year.toString()}>
+              {year}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
 
-        {/* Race Weekend Selection */}
-        <div>
-          <label className="text-sm font-medium mb-2 block">Race Weekend</label>
-          <Select
-            value={selectedMeetingKey?.toString() || ""}
-            onValueChange={(meetingKey) => {
-              setSelectedMeetingKey(parseInt(meetingKey));
-              // Clear session selection when race weekend changes
-              setSelectedSession(null);
-            }}
-            disabled={!sessions || isLoading}
-          >
-            <SelectTrigger>
-              <SelectValue
-                placeholder={
-                  isLoading ? "Loading races..." : "Select race weekend"
-                }
-              />
-            </SelectTrigger>
-            <SelectContent>
-              {Object.values(groupedSessions).map((meeting: any) => (
-                <SelectItem
-                  key={meeting.meeting_key}
-                  value={meeting.meeting_key.toString()}
-                >
+      {/* Weekend */}
+      <Select
+        value={selectedMeetingKey?.toString() || ""}
+        onValueChange={(meetingKey) => {
+          setSelectedMeetingKey(parseInt(meetingKey));
+          setSelectedSession(null);
+        }}
+        disabled={!sessions || isLoading}
+      >
+        <SelectTrigger className="h-9 min-w-[200px] bg-zinc-900/50 border border-zinc-700 text-zinc-100 hover:bg-zinc-800/60 disabled:opacity-50">
+          <SelectValue placeholder={isLoading ? "Loading…" : "Weekend"} />
+        </SelectTrigger>
+        <SelectContent className="bg-zinc-900 border border-zinc-700 text-zinc-100 max-h-80">
+          {Object.values(groupedSessions).map((meeting: any) => (
+            <SelectItem key={meeting.meeting_key} value={meeting.meeting_key.toString()}>
+              <div className="flex items-center gap-2">
+                <MapPin className="w-3 h-3" />
+                <span>{meeting.location}</span>
+                <span className="text-xs text-zinc-400">
+                  {format(new Date(meeting.date_start), "MMM d")}
+                </span>
+              </div>
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      {/* Session */}
+      <Select
+        value={selectedSession?.session_key?.toString() || ""}
+        onValueChange={handleSessionChange}
+        disabled={!selectedMeetingKey}
+      >
+        <SelectTrigger className="h-9 min-w-[200px] bg-zinc-900/50 border border-zinc-700 text-zinc-100 hover:bg-zinc-800/60 disabled:opacity-50">
+          <SelectValue placeholder="Session" />
+        </SelectTrigger>
+        <SelectContent className="bg-zinc-900 border border-zinc-700 text-zinc-100 max-h-80">
+          {selectedMeetingKey &&
+            groupedSessions[selectedMeetingKey]?.sessions
+              .sort(
+                (a: any, b: any) =>
+                  new Date(a.date_start).getTime() - new Date(b.date_start).getTime()
+              )
+              .map((session: any) => (
+                <SelectItem key={session.session_key} value={session.session_key.toString()}>
                   <div className="flex items-center gap-2">
-                    <MapPin className="w-3 h-3" />
-                    <span>{meeting.location}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {format(new Date(meeting.date_start), "MMM d")}
+                    <Badge
+                      variant={session.session_type === "Race" ? "default" : "secondary"}
+                      className="text-[10px]"
+                    >
+                      {session.session_name}
+                    </Badge>
+                    <span className="text-xs text-zinc-400">
+                      {format(new Date(session.date_start), "EEE HH:mm")}
                     </span>
                   </div>
                 </SelectItem>
               ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Session Type Selection */}
-        {selectedMeetingKey && (
-          <div>
-            <label className="text-sm font-medium mb-2 block">Session</label>
-            <Select
-              value={selectedSession?.session_key?.toString() || ""}
-              onValueChange={handleSessionChange}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select session" />
-              </SelectTrigger>
-              <SelectContent>
-                {groupedSessions[selectedMeetingKey]?.sessions
-                  .sort(
-                    (a: any, b: any) =>
-                      new Date(a.date_start).getTime() -
-                      new Date(b.date_start).getTime()
-                  )
-                  .map((session: any) => (
-                    <SelectItem
-                      key={session.session_key}
-                      value={session.session_key.toString()}
-                    >
-                      <div className="flex items-center gap-2">
-                        <Badge
-                          variant={
-                            session.session_type === "Race"
-                              ? "default"
-                              : "secondary"
-                          }
-                          className="text-xs"
-                        >
-                          {session.session_name}
-                        </Badge>
-                        <span className="text-xs text-muted-foreground">
-                          {format(new Date(session.date_start), "EEE HH:mm")}
-                        </span>
-                      </div>
-                    </SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
-
-        {/* Selected Session Info */}
-        {selectedSession && (
-          <div className="mt-4 p-3 bg-muted/20 rounded-lg">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">
-                  {selectedSession.location}
-                </span>
-                <Badge variant="outline" className="text-xs">
-                  {selectedSession.session_name}
-                </Badge>
-              </div>
-              <div className="text-xs text-muted-foreground space-y-1">
-                <p>{selectedSession.circuit_short_name}</p>
-                <p>
-                  {selectedSession.country_name} • {selectedYear}
-                </p>
-                <p>{format(new Date(selectedSession.date_start), "PPPP")}</p>
-              </div>
-            </div>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+        </SelectContent>
+      </Select>
+    </div>
   );
 }

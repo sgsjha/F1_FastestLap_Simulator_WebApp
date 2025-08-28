@@ -222,14 +222,14 @@ export default function TelemetryPanel({
         }
       }
     }
-    /**
-     *     // Prefer precise world coords from the shared store if available
-    const posEntry = (currentPositions as any)?.[currentDriver];
+    // Prefer precise world coords from the shared store if available
+    /** const posEntry = (currentPositions as any)?.[currentDriver];
     if (posEntry && typeof posEntry.x === 'number' && typeof posEntry.y === 'number') {
       currentPosition = `${Math.round(posEntry.x)},${Math.round(posEntry.y)}`;
     }
-
+     * 
      */
+   
 
     // Get fastest lap time for reference
     let fastestLapTime = '—';

@@ -195,8 +195,7 @@ export function TrackVisualization({}: TrackVisualizationProps) {
     progress: 0,
     speed: 1,
   });
-  const { setAnimationProgress, setIsPlaying } = useRaceStore();
-  //const { setAnimationProgress, setIsPlaying, setCurrentPositions } = useRaceStore();
+  const { setAnimationProgress, setIsPlaying} = useRaceStore();
 
   // Process driver data
   const processedDrivers: ProcessedDriverData[] = selectedDrivers
@@ -483,34 +482,34 @@ export function TrackVisualization({}: TrackVisualizationProps) {
     drawTrajectories(ctx, p);
     drawCars(ctx, p);
   };
-/**
- * // Click handler to log world x,y of nearest car
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const onClick = (e: MouseEvent) => {
-      if (!bounds || Object.keys(currentPositionsRef.current).length === 0) return;
-      const rect = canvas.getBoundingClientRect();
-      const cx = e.clientX - rect.left;
-      const cy = e.clientY - rect.top;
-      let best: { dn: number; dist: number; wx: number; wy: number } | null = null;
-      for (const [k, v] of Object.entries(currentPositionsRef.current)) {
-        const [px, py] = worldToCanvas(v.x, v.y);
-        const dx = px - cx;
-        const dy = py - cy;
-        const d2 = dx * dx + dy * dy;
-        if (!best || d2 < best.dist) best = { dn: Number(k), dist: d2, wx: v.x, wy: v.y };
-      }
-      if (best && best.dist <= 400) {
-        // eslint-disable-next-line no-console
-        console.log(`Car ${best.dn} @ x=${best.wx.toFixed(2)}, y=${best.wy.toFixed(2)}`);
-      }
-    };
-    canvas.addEventListener('click', onClick);
-    return () => canvas.removeEventListener('click', onClick);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bounds, processedDrivers.length]);
- */
+  /**
+   * // Click handler to log world x,y of nearest car
+   * useEffect(() => {
+   *   const canvas = canvasRef.current;
+   *   if (!canvas) return;
+   *   const onClick = (e: MouseEvent) => {
+   *     if (!bounds || Object.keys(currentPositionsRef.current).length === 0) return;
+   *     const rect = canvas.getBoundingClientRect();
+   *     const cx = e.clientX - rect.left;
+   *     const cy = e.clientY - rect.top;
+   *     let best: { dn: number; dist: number; wx: number; wy: number } | null = null;
+   *     for (const [k, v] of Object.entries(currentPositionsRef.current)) {
+   *       const [px, py] = worldToCanvas(v.x, v.y);
+   *       const dx = px - cx;
+   *       const dy = py - cy;
+   *       const d2 = dx * dx + dy * dy;
+   *       if (!best || d2 < best!.dist) best = { dn: Number(k), dist: d2, wx: v.x, wy: v.y };
+   *     }
+   *     if (best && best.dist <= 400) {
+   *       // eslint-disable-next-line no-console
+   *       console.log(`Car ${best.dn} @ x=${best.wx.toFixed(2)}, y=${best.wy.toFixed(2)}`);
+   *     }
+   *   };
+   *   canvas.addEventListener('click', onClick);
+   *   return () => canvas.removeEventListener('click', onClick);
+   *   // eslint-disable-next-line react-hooks/exhaustive-deps
+   * }, [bounds, processedDrivers.length]);
+   */
   
 
   // RAF loop

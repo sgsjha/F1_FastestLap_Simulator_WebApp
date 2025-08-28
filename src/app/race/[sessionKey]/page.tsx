@@ -5,7 +5,7 @@ import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { RaceSelector } from "@/components/race-selector/RaceSelector";
 import { DriverSelector } from "@/components/driver-selector/DriverSelector";
 import { TrackVisualization } from "@/components/track-visualization/TrackVisualization";
-import { TelemetryPanel } from "@/components/telemetry-panel/TelemetryPanel";
+import TelemetryPanel from "@/components/telemetry-panel/TelemetryPanel";
 
 const queryClient = new QueryClient();
 
