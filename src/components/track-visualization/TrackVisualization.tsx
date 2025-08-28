@@ -64,7 +64,7 @@ export function TrackVisualization({}: TrackVisualizationProps) {
   const { data: driverData = [], isLoading: isDriversLoading } = useQuery({
     queryKey: ["drivers", selectedSession?.session_key],
     queryFn: () =>
-      selectedSession
+  selectedSession 
         ? f1Api.getDrivers(selectedSession.session_key)
         : Promise.resolve([]),
     enabled: !!selectedSession,
@@ -91,7 +91,7 @@ export function TrackVisualization({}: TrackVisualizationProps) {
     enabled: !!(selectedSession && selectedDrivers.length > 0),
   });
 
-  const { data: locationData = {}, isLoading: isLocationsLoading } = useQuery({
+  const { data: locationData = {}, isLoading: isLocationsLoading } = useQuery<Record<number, GPSPoint[]>>({
     queryKey: [
       "locations",
       selectedSession?.session_key,
@@ -103,16 +103,21 @@ export function TrackVisualization({}: TrackVisualizationProps) {
         return {} as Record<number, GPSPoint[]>;
 
       // Compute each driver's fastest lap info from provided laps
-      const perDriverFastest = selectedDrivers.map((driverNumber) => {
-        const laps = (allLapData as Record<number, any[]>)[driverNumber];
-        if (!laps || laps.length === 0) return { driverNumber, error: true };
-        try {
-          const fastest = calculateFastestLap(laps);
-          return { driverNumber, fastest: fastest.fastestLap };
-        } catch (e) {
-          return { driverNumber, error: true };
-        }
-      }).filter((d) => !('error' in d)) as Array<{ driverNumber: number; fastest: { lapTime: number; startTime: string; endTime: string } }>;
+      const perDriverFastest = selectedDrivers
+        .map((driverNumber) => {
+          const laps = (allLapData as Record<number, any[]>)[driverNumber];
+          if (!laps || laps.length === 0) return { driverNumber, error: true } as const;
+          try {
+            const fastest = calculateFastestLap(laps);
+            return { driverNumber, fastest: fastest.fastestLap } as const;
+          } catch (e) {
+            return { driverNumber, error: true } as const;
+          }
+        })
+        .filter((d) => !("error" in d)) as Array<{
+          driverNumber: number;
+          fastest: { lapTime: number; startTime: string; endTime: string };
+        }>;
 
       if (perDriverFastest.length === 0) return {} as Record<number, GPSPoint[]>;
 
@@ -165,7 +170,7 @@ export function TrackVisualization({}: TrackVisualizationProps) {
         return acc;
       }, {} as Record<number, GPSPoint[]>);
 
-      return result;
+  return result as Record<number, GPSPoint[]>;
     },
     enabled: !!(
       selectedSession &&
@@ -177,6 +182,7 @@ export function TrackVisualization({}: TrackVisualizationProps) {
   const isLoading = isDriversLoading || isLapsLoading || isLocationsLoading;
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  //const currentPositionsRef = useRef<Record<number, { x: number; y: number; elapsed: number }>>({});
   const animationRef = useRef<number | null>(null);
   const lastTimestampRef = useRef<number>(0);
   const progressRef = useRef<number>(0);
@@ -189,12 +195,16 @@ export function TrackVisualization({}: TrackVisualizationProps) {
     progress: 0,
     speed: 1,
   });
+  const { setAnimationProgress, setIsPlaying } = useRaceStore();
+  //const { setAnimationProgress, setIsPlaying, setCurrentPositions } = useRaceStore();
 
   // Process driver data
   const processedDrivers: ProcessedDriverData[] = selectedDrivers
     .map((driverNumber) => {
       const driver = driverData.find((d) => d.driver_number === driverNumber);
-      const locations = locationData[driverNumber] || [];
+      const locations = (locationData as Record<number, GPSPoint[]>)[
+        driverNumber
+      ] || [];
       // determine lapDuration (seconds) from provided lap data if available
       let lapDuration = 0;
       try {
@@ -380,10 +390,12 @@ export function TrackVisualization({}: TrackVisualizationProps) {
     );
     const labelOffset = Math.max(10, Math.min(18, 12 * (0.9 + 0.2 * z)));
 
+    //const posMap: Record<number, { x: number; y: number; elapsed: number }> = {};
     processedDrivers.forEach((driver) => {
       const pos = getCarPosition(driver, progress);
       if (!pos) return;
       const [x, y] = worldToCanvas(pos.x, pos.y);
+      //posMap[driver.driverNumber] = { x: pos.x, y: pos.y, elapsed: pos.elapsed };
 
       ctx.save();
 
@@ -406,7 +418,9 @@ export function TrackVisualization({}: TrackVisualizationProps) {
       ctx.fillText(driver.acronym, x, y - labelOffset);
 
       ctx.restore();
-    });
+  });
+  //currentPositionsRef.current = posMap;
+  //setCurrentPositions(posMap);
   };
 
   // Draw traces up to current time
@@ -469,6 +483,35 @@ export function TrackVisualization({}: TrackVisualizationProps) {
     drawTrajectories(ctx, p);
     drawCars(ctx, p);
   };
+/**
+ * // Click handler to log world x,y of nearest car
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const onClick = (e: MouseEvent) => {
+      if (!bounds || Object.keys(currentPositionsRef.current).length === 0) return;
+      const rect = canvas.getBoundingClientRect();
+      const cx = e.clientX - rect.left;
+      const cy = e.clientY - rect.top;
+      let best: { dn: number; dist: number; wx: number; wy: number } | null = null;
+      for (const [k, v] of Object.entries(currentPositionsRef.current)) {
+        const [px, py] = worldToCanvas(v.x, v.y);
+        const dx = px - cx;
+        const dy = py - cy;
+        const d2 = dx * dx + dy * dy;
+        if (!best || d2 < best.dist) best = { dn: Number(k), dist: d2, wx: v.x, wy: v.y };
+      }
+      if (best && best.dist <= 400) {
+        // eslint-disable-next-line no-console
+        console.log(`Car ${best.dn} @ x=${best.wx.toFixed(2)}, y=${best.wy.toFixed(2)}`);
+      }
+    };
+    canvas.addEventListener('click', onClick);
+    return () => canvas.removeEventListener('click', onClick);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bounds, processedDrivers.length]);
+ */
+  
 
   // RAF loop
   const animate = (ts: number) => {
@@ -490,10 +533,12 @@ export function TrackVisualization({}: TrackVisualizationProps) {
           ...prev,
           progress: progressRef.current,
         }));
+  setAnimationProgress(progressRef.current);
       }
       if (next >= 1) {
         // Stop at end of slowest lap
         setAnimationState((prev) => ({ ...prev, isPlaying: false }));
+  setIsPlaying(false);
       }
     }
 

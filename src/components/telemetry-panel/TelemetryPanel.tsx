@@ -1,13 +1,14 @@
-'use client';
+"use client";
 
-import { useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { useRaceStore } from '@/lib/store/raceStore';
-import { f1Api } from '@/lib/api/openf1';
-import { calculateFastestLap } from '@/lib/utils/lapCalculator';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
+import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useRaceStore } from "@/lib/store/raceStore";
+import { f1Api } from "@/lib/api/openf1";
+import { calculateFastestLap } from "@/lib/utils/lapCalculator";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+
+// ...
 
 interface TelemetryPanelProps {
   // Add these props to receive live data from TrackVisualization
@@ -28,13 +29,21 @@ const theme = {
   red: '#ef4444',
 };
 
-export default function TelemetryPanel({ 
-  animationProgress = 0,
+export default function TelemetryPanel({
+  animationProgress,
   locationData = {},
   focusDriver,
-  isPlaying = false 
+  isPlaying,
 }: TelemetryPanelProps) {
-  const { selectedSession, selectedDrivers } = useRaceStore();
+  const {
+    selectedSession,
+    selectedDrivers,
+    animationProgress: storeProgress,
+    isPlaying: storeIsPlaying,
+  //currentPositions,
+  } = useRaceStore();
+  const progress = animationProgress ?? storeProgress ?? 0;
+  const playing = isPlaying ?? storeIsPlaying ?? false;
 
   // Get driver data
   const { data: drivers = [] } = useQuery({
@@ -169,7 +178,7 @@ export default function TelemetryPanel({
       ? driverLocations[driverLocations.length - 1]?.elapsed || 0 
       : driverCarData[driverCarData.length - 1]?.elapsed || 0;
     
-    const currentTime = animationProgress * lapDuration;
+  const currentTime = progress * lapDuration;
 
     // Find the closest car data point to current time
     let closestPoint = driverCarData[0];
@@ -198,7 +207,7 @@ export default function TelemetryPanel({
     }
 
     // Get current position from location data
-    let currentPosition = '—';
+  let currentPosition = '—';
     if (driverLocations.length > 0) {
       // Find interpolated position
       for (let i = 0; i < driverLocations.length - 1; i++) {
@@ -213,6 +222,14 @@ export default function TelemetryPanel({
         }
       }
     }
+    /**
+     *     // Prefer precise world coords from the shared store if available
+    const posEntry = (currentPositions as any)?.[currentDriver];
+    if (posEntry && typeof posEntry.x === 'number' && typeof posEntry.y === 'number') {
+      currentPosition = `${Math.round(posEntry.x)},${Math.round(posEntry.y)}`;
+    }
+
+     */
 
     // Get fastest lap time for reference
     let fastestLapTime = '—';
@@ -236,7 +253,7 @@ export default function TelemetryPanel({
       lapTime: fastestLapTime,
       rpm: closestPoint.rpm || 0
     };
-  }, [animationProgress, carData, locationData, allLapData, currentDriver]);
+  }, [progress, carData, locationData, allLapData, currentDriver]); // add currentPositions if want to show positions
 
   if (!selectedSession || selectedDrivers.length === 0) {
     return (
@@ -347,12 +364,12 @@ export default function TelemetryPanel({
         {/* Animation status indicator */}
         <div className="mt-3 flex items-center gap-2">
           <div 
-            className={`w-2 h-2 rounded-full ${isPlaying ? 'animate-pulse' : ''}`}
-            style={{ background: isPlaying ? theme.green : theme.muted }}
+            className={`w-2 h-2 rounded-full ${playing ? 'animate-pulse' : ''}`}
+            style={{ background: playing ? theme.green : theme.muted }}
           />
-          <div className="text-xs" style={{ color: theme.muted }}>
-            {isPlaying ? 'Live telemetry' : 'Paused'} • {Math.round(animationProgress * 100)}% complete
-          </div>
+            <div className="text-xs" style={{ color: theme.muted }}>
+              {playing ? "Live telemetry" : "Paused"} • {Math.round(progress * 100)}% complete
+            </div>
         </div>
         {/* Debug: show raw car_data attempts if present */}
         <div className="mt-3">
