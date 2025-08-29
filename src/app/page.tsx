@@ -14,7 +14,7 @@ export default function Home() {
     <QueryClientProvider client={queryClient}>
       <div className="min-h-screen bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900">
         <header className="border-b border-zinc-700 bg-zinc-900/50 backdrop-blur">
-          <div className="container mx-auto px-4 py-4 flex items-center justify-between gap-4">
+          <div className="w-full px-4 py-4 flex items-center justify-between gap-4">
             <div>
               <h1 className="text-3xl font-bold text-white">F1 Race Analyzer</h1>
               <p className="text-zinc-400 mt-1">Compare driver performance across the last 10 seasons</p>
@@ -25,15 +25,15 @@ export default function Home() {
           </div>
         </header>
 
-        <main className="container mx-auto px-4 py-8">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        <main className="w-full px-4 py-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start w-full">
             <div className="space-y-6 order-1">
               <DriverSelector />
             </div>
-            <div className="order-2">
+            <div className="order-2 w-full">
               <TrackVisualization />
             </div>
-            <div className="space-y-6 order-3">
+            <div className="space-y-6 order-3 w-full">
               <TelemetryPanel />
             </div>
           </div>

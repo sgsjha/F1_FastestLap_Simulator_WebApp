@@ -270,8 +270,11 @@ export default function TelemetryPanel({
   }
 
   return (
-    <Card className="border rounded-xl overflow-hidden" style={{ background: theme.panel, borderColor: theme.border, color: theme.text }}>
-      <CardContent className="p-3">
+    <Card
+      className="border rounded-xl overflow-hidden w-full"
+      style={{ background: theme.panel, borderColor: theme.border, color: theme.text }}
+    >
+      <CardContent className="p-3 max-h-[60vh] lg:max-h-[70vh] xl:max-h-[80vh] overflow-y-auto">
         {/* Header row */}
         <div className="flex items-center gap-2 mb-3">
           <span

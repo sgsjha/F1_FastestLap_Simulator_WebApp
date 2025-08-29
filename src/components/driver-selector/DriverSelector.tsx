@@ -85,13 +85,16 @@ export function DriverSelector() {
   }
 
   return (
-    <Card className="bg-zinc-950 border-zinc-800">
+    <Card className="bg-zinc-950 border-zinc-800 w-full">
       <CardHeader className="pb-2">
         <CardTitle className="flex items-center gap-2 text-zinc-100">
           <User className="w-5 h-5 text-zinc-400" />
           Select Drivers
           {selectedDrivers.length > 0 && (
-            <Badge variant="secondary" className="ml-2 bg-zinc-800 text-zinc-200 border-zinc-700">
+            <Badge
+              variant="secondary"
+              className="ml-2 bg-zinc-800 text-zinc-200 border-zinc-700"
+            >
               {selectedDrivers.length} selected
             </Badge>
           )}
@@ -99,7 +102,7 @@ export function DriverSelector() {
       </CardHeader>
 
       <CardContent>
-        <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
+        <div className="space-y-2 max-h-80 lg:max-h-[70vh] xl:max-h-[80vh] overflow-y-auto pr-1">
           {drivers?.map((driver) => {
             const isSelected = selectedDrivers.includes(driver.driver_number);
             return (
@@ -130,7 +133,9 @@ export function DriverSelector() {
                   <span className="text-sm font-semibold tracking-wide text-zinc-100 truncate">
                     {driver.name_acronym}
                   </span>
-                  <span className="text-xs text-zinc-400">#{driver.driver_number}</span>
+                  <span className="text-xs text-zinc-400">
+                    #{driver.driver_number}
+                  </span>
                   <span className="ml-2 text-xs text-zinc-500 truncate">
                     {driver.full_name} • {driver.team_name}
                   </span>
@@ -141,7 +146,9 @@ export function DriverSelector() {
                   <Eye
                     className={[
                       "w-4 h-4 transition-opacity",
-                      isSelected ? "text-emerald-400 opacity-100" : "text-zinc-600 opacity-40",
+                      isSelected
+                        ? "text-emerald-400 opacity-100"
+                        : "text-zinc-600 opacity-40",
                     ].join(" ")}
                     aria-hidden="true"
                   />
@@ -153,10 +160,14 @@ export function DriverSelector() {
 
         {selectedDrivers.length > 0 && (
           <div className="mt-4 pt-4 border-t border-zinc-800">
-            <p className="text-xs text-zinc-400 mb-2">Selected for comparison:</p>
+            <p className="text-xs text-zinc-400 mb-2">
+              Selected for comparison:
+            </p>
             <div className="flex flex-wrap gap-1">
               {selectedDrivers.map((driverNumber) => {
-                const driver = drivers?.find((d) => d.driver_number === driverNumber);
+                const driver = drivers?.find(
+                  (d) => d.driver_number === driverNumber
+                );
                 return driver ? (
                   <Badge
                     key={driverNumber}

@@ -801,7 +801,7 @@ export function TrackVisualization({}: TrackVisualizationProps) {
           <>
             <canvas
               ref={canvasRef}
-              className="w-full h-[500px] bg-zinc-900 rounded-lg border"
+              className="w-full h-[500px] lg:h-[70vh] xl:h-[80vh] bg-zinc-900 rounded-lg border"
               style={{ imageRendering: "auto", touchAction: "none" }} // allow pointer pan on touch
             />
 
