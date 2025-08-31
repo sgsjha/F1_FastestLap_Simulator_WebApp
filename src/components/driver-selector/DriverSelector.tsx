@@ -6,7 +6,7 @@ import { useRaceStore } from "@/lib/store/raceStore";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { User, Eye } from "lucide-react";
+import { User } from "lucide-react";
 
 export function DriverSelector() {
   const { selectedSession, selectedDrivers, toggleDriver } = useRaceStore();
@@ -109,49 +109,37 @@ export function DriverSelector() {
               <div
                 key={driver.driver_number}
                 className={[
-                  "group grid grid-cols-[auto,1fr,auto] items-center gap-3 px-2 py-2 rounded-lg border",
+                  "group px-2 py-1.5 rounded-md",
                   isSelected
-                    ? "bg-zinc-900/70 border-zinc-700"
-                    : "bg-zinc-900/30 border-transparent hover:border-zinc-800 hover:bg-zinc-900/50",
+                    ? "bg-zinc-900/60 border border-zinc-600"
+                    : "bg-zinc-900/30 hover:bg-zinc-900/40",
                 ].join(" ")}
               >
-                <Checkbox
-                  id={`driver-${driver.driver_number}`}
-                  checked={isSelected}
-                  onCheckedChange={() => toggleDriver(driver.driver_number)}
-                  className="data-[state=checked]:bg-zinc-100 data-[state=checked]:border-zinc-100"
-                />
-
-                <label
-                  htmlFor={`driver-${driver.driver_number}`}
-                  className="flex min-w-0 items-center gap-2 cursor-pointer"
-                >
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id={`driver-${driver.driver_number}`}
+                    checked={isSelected}
+                    onCheckedChange={() => toggleDriver(driver.driver_number)}
+                    className="w-4 h-4 border-zinc-700 data-[state=checked]:bg-zinc-700 data-[state=checked]:border-zinc-600"
+                  />
                   <span
                     className="inline-block w-2.5 h-2.5 rounded-full ring-2 ring-white/10"
                     style={{ backgroundColor: `#${driver.team_colour}` }}
                   />
-                  <span className="text-sm font-semibold tracking-wide text-zinc-100 truncate">
-                    {driver.name_acronym}
-                  </span>
-                  <span className="text-xs text-zinc-400">
-                    #{driver.driver_number}
-                  </span>
-                  <span className="ml-2 text-xs text-zinc-500 truncate">
-                    {driver.full_name} • {driver.team_name}
-                  </span>
-                </label>
-
-                {/* Eye indicator (read-only visual) */}
-                <div className="flex items-center">
-                  <Eye
-                    className={[
-                      "w-4 h-4 transition-opacity",
-                      isSelected
-                        ? "text-emerald-400 opacity-100"
-                        : "text-zinc-600 opacity-40",
-                    ].join(" ")}
-                    aria-hidden="true"
-                  />
+                  <label
+                    htmlFor={`driver-${driver.driver_number}`}
+                    className="min-w-0 flex-1 cursor-pointer"
+                  >
+                    <span className="text-sm font-semibold tracking-wide text-zinc-100 leading-tight truncate">
+                      {driver.name_acronym}
+                      <span className="ml-1 text-xs text-zinc-400">
+                        #{driver.driver_number}
+                      </span>
+                    </span>
+                  </label>
+                </div>
+                <div className="pl-8 text-xs text-zinc-400 truncate">
+                  {driver.full_name} • {driver.team_name}
                 </div>
               </div>
             );
