@@ -14,16 +14,16 @@ export default function Home() {
     <QueryClientProvider client={queryClient}>
       <div className="min-h-screen bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900">
         <header className="border-b border-zinc-700 bg-zinc-900/50 backdrop-blur">
-          <div className="w-full px-3 py-3 flex items-center justify-between gap-3">
-            <div>
-              <h1 className="text-3xl font-bold text-white">
+          <div className="w-full px-3 py-3 sm:py-4 flex flex-col md:flex-row md:items-center justify-between gap-2 md:gap-3">
+            <div className="min-w-0">
+              <h1 className="text-2xl sm:text-3xl font-bold text-white">
                 F1 Race Analyzer
               </h1>
-              <p className="text-zinc-400 mt-1">
-                Compare driver performance across the last 10 seasons
+              <p className="text-zinc-400 mt-1 text-sm sm:text-base">
+                Compare driver performance across the last 3 seasons
               </p>
             </div>
-            <div className="shrink-0">
+            <div className="w-full md:w-auto md:shrink-0">
               <RaceSelector />
             </div>
           </div>
