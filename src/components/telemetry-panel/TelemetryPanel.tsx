@@ -7,6 +7,7 @@ import { f1Api } from "@/lib/api/openf1";
 import { calculateFastestLap } from "@/lib/utils/lapCalculator";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Eye, EyeOff } from "lucide-react";
 
 // ...
 
@@ -77,7 +78,10 @@ export default function TelemetryPanel({
   });
 
   // Use focus driver or first selected driver
-  const currentDriver = focusDriver || selectedDrivers[0];
+  const [localFocusDriver, setLocalFocusDriver] = useState<number | undefined>(
+    undefined
+  );
+  const currentDriver = localFocusDriver ?? focusDriver ?? selectedDrivers[0];
   const driver = drivers.find((d) => d.driver_number === currentDriver);
   const driverLocations = locationData[currentDriver] || [];
   const driverLaps = allLapData[currentDriver] || [];
@@ -493,6 +497,42 @@ export default function TelemetryPanel({
             {Math.round(progress * 100)}% complete
           </div>
         </div>
+        {/* Driver focus buttons */}
+        {selectedDrivers && selectedDrivers.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {selectedDrivers.map((dn) => {
+              const d = drivers.find((x) => x.driver_number === dn);
+              const teamColor = `#${d?.team_colour ?? "777"}`;
+              const isActive = dn === currentDriver;
+              return (
+                <button
+                  key={`focus-${dn}`}
+                  type="button"
+                  onClick={() => setLocalFocusDriver(dn)}
+                  className={[
+                    "inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs",
+                    isActive
+                      ? "border-zinc-600 bg-zinc-900 text-zinc-100"
+                      : "border-zinc-800 bg-zinc-900/40 text-zinc-300 hover:bg-zinc-900/60",
+                  ].join(" ")}
+                  aria-pressed={isActive}
+                  title={`View ${d?.name_acronym ?? dn} telemetry`}
+                >
+                  <span
+                    className="inline-block w-2.5 h-2.5 rounded-full ring-2 ring-white/10"
+                    style={{ background: teamColor }}
+                  />
+                  <span className="font-semibold">{d?.name_acronym ?? dn}</span>
+                  {isActive ? (
+                    <Eye className="w-3.5 h-3.5" />
+                  ) : (
+                    <EyeOff className="w-3.5 h-3.5" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        )}
         {/* Debug: show raw car_data attempts if present */}
         <div className="mt-3">
           {(selectedDrivers || []).map((dn) => {
