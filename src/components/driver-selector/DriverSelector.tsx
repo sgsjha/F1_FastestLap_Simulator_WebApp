@@ -85,7 +85,7 @@ export function DriverSelector() {
   }
 
   return (
-    <Card className="bg-zinc-950 border-zinc-800 w-full">
+    <Card className="bg-zinc-950 border-zinc-800 w-full h-[500px] lg:h-[70vh] xl:h-[80vh] flex flex-col">
       <CardHeader className="pb-2">
         <CardTitle className="flex items-center gap-2 text-zinc-100">
           <User className="w-5 h-5 text-zinc-400" />
@@ -101,8 +101,8 @@ export function DriverSelector() {
         </CardTitle>
       </CardHeader>
 
-      <CardContent>
-        <div className="space-y-2 max-h-80 lg:max-h-[70vh] xl:max-h-[80vh] overflow-y-auto pr-1">
+      <CardContent className="flex-1 overflow-hidden">
+        <div className="space-y-2 h-full overflow-y-auto pr-1">
           {drivers?.map((driver) => {
             const isSelected = selectedDrivers.includes(driver.driver_number);
             return (

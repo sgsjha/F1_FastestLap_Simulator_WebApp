@@ -720,8 +720,8 @@ export function TrackVisualization({}: TrackVisualizationProps) {
 
   if (!selectedSession) {
     return (
-      <Card className="h-[600px] flex items-center justify-center border-0 bg-transparent shadow-none">
-        <CardContent className="p-0">
+      <Card className="w-full h-[500px] lg:h-[70vh] xl:h-[80vh] flex items-center justify-center border-0 bg-transparent shadow-none py-0">
+        <CardContent className="p-0 w-full h-full">
           <div className="text-center">
             <Zap className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-lg font-semibold mb-2">Ready to Analyze</h3>
@@ -736,8 +736,8 @@ export function TrackVisualization({}: TrackVisualizationProps) {
 
   if (selectedDrivers.length === 0) {
     return (
-      <Card className="h-[600px] flex items-center justify-center border-0 bg-transparent shadow-none">
-        <CardContent className="p-0">
+      <Card className="w-full h-[500px] lg:h-[70vh] xl:h-[80vh] flex items-center justify-center border-0 bg-transparent shadow-none py-0">
+        <CardContent className="p-0 w-full h-full">
           <div className="text-center">
             <Zap className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-lg font-semibold mb-2">Select Drivers</h3>
@@ -751,10 +751,10 @@ export function TrackVisualization({}: TrackVisualizationProps) {
   }
 
   return (
-    <Card className="rounded-xl overflow-hidden border-0 bg-transparent shadow-none">
-      <CardContent className="p-0">
+    <Card className="rounded-xl overflow-hidden border-0 bg-transparent shadow-none w-full h-[500px] lg:h-[70vh] xl:h-[80vh] flex flex-col py-0">
+      <CardContent className="p-0 flex-1">
         {isLoading ? (
-          <div className="h-[500px] flex items-center justify-center bg-muted/20 rounded-lg">
+          <div className="h-full flex items-center justify-center bg-muted/20 rounded-lg">
             <div className="text-center space-y-2">
               <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
               <p className="text-sm text-muted-foreground">
@@ -763,7 +763,7 @@ export function TrackVisualization({}: TrackVisualizationProps) {
             </div>
           </div>
         ) : processedDrivers.length === 0 ? (
-          <div className="h-[500px] flex items-center justify-center bg-muted/20 rounded-lg">
+          <div className="h-full flex items-center justify-center bg-muted/20 rounded-lg">
             <div className="text-center">
               <p className="text-muted-foreground">
                 No GPS data available for selected drivers
@@ -772,17 +772,17 @@ export function TrackVisualization({}: TrackVisualizationProps) {
           </div>
         ) : (
           <>
-            <div className="relative">
+            <div className="relative h-full">
               <canvas
                 ref={canvasRef}
-                className="w-full h-[500px] lg:h-[70vh] xl:h-[80vh] bg-zinc-900 rounded-lg"
+                className="w-full h-full bg-zinc-900 rounded-lg"
                 style={{ imageRendering: "auto", touchAction: "none" }}
               />
 
               {/* Controls overlay - single full-width bar */}
               <div className="pointer-events-none absolute inset-0 flex items-end p-3">
-                <div className="pointer-events-auto flex w-full items-center justify-between gap-4 rounded-[12px] px-3 py-2 bg-[rgba(15,15,18,0.65)] backdrop-blur-md border border-[#2a2b31]">
-                  <div className="flex items-center gap-2">
+                <div className="pointer-events-auto flex w-full items-center justify-between gap-3 rounded-[12px] px-2 py-1.5 sm:px-3 sm:py-2 bg-[rgba(15,15,18,0.65)] backdrop-blur-md border border-[#2a2b31] overflow-x-auto whitespace-nowrap">
+                  <div className="flex items-center gap-2 shrink-0">
                     <Button
                       variant="outline"
                       size="icon"
@@ -821,8 +821,8 @@ export function TrackVisualization({}: TrackVisualizationProps) {
                     </Button>
                   </div>
 
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2 w-56">
+                  <div className="flex items-center gap-3 flex-nowrap">
+                    <div className="flex items-center gap-2 w-56 shrink-0">
                       <span className="text-xs text-zinc-300">Progress</span>
                       <Slider
                         value={[animationState.progress * 100]}
@@ -843,7 +843,7 @@ export function TrackVisualization({}: TrackVisualizationProps) {
                         {Math.round(animationState.progress * 100)}%
                       </span>
                     </div>
-                    <div className="flex items-center gap-2 w-40">
+                    <div className="flex items-center gap-2 w-40 shrink-0">
                       <span className="text-xs text-zinc-300">Speed</span>
                       <Slider
                         value={[animationState.speed]}
