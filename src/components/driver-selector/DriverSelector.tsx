@@ -6,7 +6,8 @@ import { useRaceStore } from "@/lib/store/raceStore";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { User } from "lucide-react";
+import { Timer, User } from "lucide-react";
+import { calculateFastestLap } from "@/lib/utils/lapCalculator";
 
 export function DriverSelector() {
   const { selectedSession, selectedDrivers, toggleDriver } = useRaceStore();
@@ -22,6 +23,47 @@ export function DriverSelector() {
         ? f1Api.getDrivers(selectedSession.session_key)
         : Promise.resolve([]),
     enabled: !!selectedSession,
+  });
+
+  // Find the fastest driver among currently selected (by fastest lap time)
+  const { data: fastestInfo } = useQuery<{
+    fastestDriverNumber: number;
+    lapTime: number;
+  } | null>({
+    queryKey: ["fastest-driver", selectedSession?.session_key, selectedDrivers],
+    queryFn: async () => {
+      if (!selectedSession || selectedDrivers.length === 0) return null;
+      const lapResults = await Promise.all(
+        selectedDrivers.map(async (driverNumber) => {
+          try {
+            const laps = await f1Api.getLaps(
+              selectedSession.session_key,
+              driverNumber
+            );
+            if (!laps || laps.length === 0) return null;
+            const fastest = calculateFastestLap(laps);
+            return {
+              driverNumber,
+              lapTime: fastest.fastestLap.lapTime,
+            } as const;
+          } catch {
+            return null;
+          }
+        })
+      );
+      const valid = lapResults.filter(Boolean) as Array<{
+        driverNumber: number;
+        lapTime: number;
+      }>;
+      if (valid.length === 0) return null;
+      valid.sort((a, b) => a.lapTime - b.lapTime);
+      return {
+        fastestDriverNumber: valid[0].driverNumber,
+        lapTime: valid[0].lapTime,
+      };
+    },
+    enabled: !!(selectedSession && selectedDrivers.length > 0),
+    staleTime: 30_000,
   });
 
   if (!selectedSession) {
@@ -105,6 +147,8 @@ export function DriverSelector() {
         <div className="space-y-2 h-full overflow-y-auto pr-1">
           {drivers?.map((driver) => {
             const isSelected = selectedDrivers.includes(driver.driver_number);
+            const isFastest =
+              fastestInfo?.fastestDriverNumber === driver.driver_number;
             return (
               <div
                 key={driver.driver_number}
@@ -130,11 +174,19 @@ export function DriverSelector() {
                     htmlFor={`driver-${driver.driver_number}`}
                     className="min-w-0 flex-1 cursor-pointer"
                   >
-                    <span className="text-sm font-semibold tracking-wide text-zinc-100 leading-tight truncate">
-                      {driver.name_acronym}
+                    <span className="text-sm font-semibold tracking-wide text-zinc-100 leading-tight truncate inline-flex items-center gap-1">
+                      <span>{driver.name_acronym}</span>
                       <span className="ml-1 text-xs text-zinc-400">
                         #{driver.driver_number}
                       </span>
+                      {isFastest && (
+                        <span title="Fastest lap among selected">
+                          <Timer
+                            className="w-3.5 h-3.5 text-purple-400"
+                            aria-label="Fastest driver"
+                          />
+                        </span>
+                      )}
                     </span>
                   </label>
                 </div>

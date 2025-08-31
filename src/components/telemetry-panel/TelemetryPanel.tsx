@@ -7,7 +7,7 @@ import { f1Api } from "@/lib/api/openf1";
 import { calculateFastestLap } from "@/lib/utils/lapCalculator";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Timer } from "lucide-react";
 
 // ...
 
@@ -100,6 +100,25 @@ export default function TelemetryPanel({
   const driver = drivers.find((d) => d.driver_number === currentDriver);
   const driverLocations = locationData[currentDriver] || [];
   const driverLaps = allLapData[currentDriver] || [];
+
+  // Determine fastest driver among selected (by fastest lap time)
+  const fastestDriverNumber = useMemo(() => {
+    try {
+      const entries: Array<{ dn: number; lap: number }> = [];
+      for (const dn of selectedDrivers || []) {
+        const laps = (allLapData as any)?.[dn];
+        if (laps && laps.length > 0) {
+          const f = calculateFastestLap(laps);
+          entries.push({ dn, lap: f.fastestLap.lapTime });
+        }
+      }
+      if (entries.length === 0) return undefined;
+      entries.sort((a, b) => a.lap - b.lap);
+      return entries[0].dn;
+    } catch {
+      return undefined;
+    }
+  }, [allLapData, selectedDrivers]);
 
   // Get real car data for telemetry
   const [carDataDebug, setCarDataDebug] = useState<any>(null);
@@ -381,9 +400,17 @@ export default function TelemetryPanel({
             }}
           />
           <div>
-            <div className="font-bold tracking-wide">
-              {driver?.name_acronym ?? "DRV"} •{" "}
-              {driver?.full_name?.split(" ")[0] ?? ""}
+            <div className="font-bold tracking-wide flex items-center gap-1">
+              <span>{driver?.name_acronym ?? "DRV"}</span>
+              {currentDriver && fastestDriverNumber === currentDriver && (
+                <span title="Fastest lap among selected">
+                  <Timer
+                    className="w-3.5 h-3.5 text-purple-400"
+                    aria-label="Fastest driver"
+                  />
+                </span>
+              )}
+              <span>• {driver?.full_name?.split(" ")[0] ?? ""}</span>
             </div>
             <div className="text-sm" style={{ color: theme.muted }}>
               {driver?.team_name ?? "Team"}
@@ -554,6 +581,7 @@ export default function TelemetryPanel({
               const d = drivers.find((x) => x.driver_number === dn);
               const teamColor = `#${d?.team_colour ?? "777"}`;
               const isActive = dn === currentDriver;
+              const isFastest = dn === fastestDriverNumber;
               return (
                 <button
                   key={`focus-${dn}`}
@@ -572,7 +600,17 @@ export default function TelemetryPanel({
                     className="inline-block w-2.5 h-2.5 rounded-full ring-2 ring-white/10"
                     style={{ background: teamColor }}
                   />
-                  <span className="font-semibold">{d?.name_acronym ?? dn}</span>
+                  <span className="font-semibold inline-flex items-center gap-1">
+                    {d?.name_acronym ?? dn}
+                    {isFastest && (
+                      <span title="Fastest lap among selected">
+                        <Timer
+                          className="w-3 h-3 text-purple-400"
+                          aria-label="Fastest driver"
+                        />
+                      </span>
+                    )}
+                  </span>
                   {isActive ? (
                     <Eye className="w-3.5 h-3.5" />
                   ) : (
