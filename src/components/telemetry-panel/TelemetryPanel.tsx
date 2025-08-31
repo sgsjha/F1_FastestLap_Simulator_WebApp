@@ -430,9 +430,9 @@ export default function TelemetryPanel({
         color: theme.text,
       }}
     >
-      <CardContent className="p-3 flex-1 overflow-y-auto">
+      <CardContent className="p-2 sm:p-3 flex-1 overflow-y-auto">
         {/* Header row */}
-        <div className="flex items-center gap-2 mb-3">
+        <div className="flex items-center gap-2 mb-2 sm:mb-3">
           <span
             className="inline-block h-[1.1rem] w-[1.1rem] rounded-full border-2"
             style={{
@@ -441,7 +441,7 @@ export default function TelemetryPanel({
             }}
           />
           <div>
-            <div className="font-bold tracking-wide flex items-center gap-1">
+            <div className="font-bold tracking-wide flex items-center gap-1 text-sm sm:text-base">
               <span className="inline-flex items-center gap-1">
                 <span>{driver?.name_acronym ?? "DRV"}</span>
                 {currentDriver &&
@@ -464,11 +464,14 @@ export default function TelemetryPanel({
               </span>
               <span>• {driver?.full_name?.split(" ")[0] ?? ""}</span>
             </div>
-            <div className="text-sm" style={{ color: theme.muted }}>
+            <div className="text-xs sm:text-sm" style={{ color: theme.muted }}>
               {driver?.team_name ?? "Team"}
             </div>
           </div>
-          <Badge variant="secondary" className="ml-auto font-bold">
+          <Badge
+            variant="secondary"
+            className="ml-auto font-bold text-xs sm:text-sm"
+          >
             Q •{" "}
             {selectedSession?.date_start
               ? new Date(selectedSession.date_start).getUTCFullYear()
@@ -478,74 +481,101 @@ export default function TelemetryPanel({
         </div>
 
         {/* Stat tiles */}
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-1 sm:gap-2">
           <div
-            className="rounded-lg border p-3"
+            className="rounded-md sm:rounded-lg border p-2 sm:p-3"
             style={{ background: theme.tileBg, borderColor: theme.border }}
           >
-            <div className="text-xs" style={{ color: theme.muted }}>
+            <div
+              className="text-[10px] sm:text-xs"
+              style={{ color: theme.muted }}
+            >
               SPEED
             </div>
-            <div className="leading-none font-extrabold text-[2.2rem] tabular-nums">
+            <div className="leading-none font-extrabold text-[1.5rem] sm:text-[2.2rem] tabular-nums">
               {liveTelemetry.speed}
             </div>
-            <div className="text-xs" style={{ color: theme.muted }}>
+            <div
+              className="text-[10px] sm:text-xs"
+              style={{ color: theme.muted }}
+            >
               km/h
             </div>
           </div>
           <div
-            className="rounded-lg border p-3"
+            className="rounded-md sm:rounded-lg border p-2 sm:p-3"
             style={{ background: theme.tileBg, borderColor: theme.border }}
           >
-            <div className="text-xs" style={{ color: theme.muted }}>
+            <div
+              className="text-[10px] sm:text-xs"
+              style={{ color: theme.muted }}
+            >
               GEAR
             </div>
-            <div className="leading-none font-extrabold text-[2.2rem] tabular-nums">
+            <div className="leading-none font-extrabold text-[1.5rem] sm:text-[2.2rem] tabular-nums">
               {liveTelemetry.gear}
             </div>
-            <div className="text-xs" style={{ color: theme.muted }}>
+            <div
+              className="text-[10px] sm:text-xs"
+              style={{ color: theme.muted }}
+            >
               est.
             </div>
           </div>
           <div
-            className="rounded-lg border p-3"
+            className="rounded-md sm:rounded-lg border p-2 sm:p-3"
             style={{ background: theme.tileBg, borderColor: theme.border }}
           >
-            <div className="text-xs" style={{ color: theme.muted }}>
+            <div
+              className="text-[10px] sm:text-xs"
+              style={{ color: theme.muted }}
+            >
               RPM
             </div>
-            <div className="leading-none font-extrabold text-[2.2rem] tabular-nums">
+            <div className="leading-none font-extrabold text-[1.5rem] sm:text-[2.2rem] tabular-nums">
               {liveTelemetry.rpm}
             </div>
-            <div className="text-xs" style={{ color: theme.muted }}>
+            <div
+              className="text-[10px] sm:text-xs"
+              style={{ color: theme.muted }}
+            >
               engine
             </div>
           </div>
           <div
-            className="rounded-lg border p-3"
+            className="rounded-md sm:rounded-lg border p-2 sm:p-3"
             style={{ background: theme.tileBg, borderColor: theme.border }}
           >
-            <div className="text-xs" style={{ color: theme.muted }}>
+            <div
+              className="text-[10px] sm:text-xs"
+              style={{ color: theme.muted }}
+            >
               ELAPSED
             </div>
-            <div className="leading-none font-extrabold text-[2rem] tabular-nums">
+            <div className="leading-none font-extrabold text-[1.3rem] sm:text-[2rem] tabular-nums">
               {formatTime(liveTelemetry.elapsed)}
             </div>
-            <div className="text-xs" style={{ color: theme.muted }}>
+            <div
+              className="text-[10px] sm:text-xs"
+              style={{ color: theme.muted }}
+            >
               mm:ss.sss
             </div>
           </div>
 
           {/* Throttle bar */}
           <div
-            className="rounded-lg border p-3 col-span-2"
+            className="rounded-md sm:rounded-lg border p-2 sm:p-3 col-span-2"
             style={{ background: theme.tileBg, borderColor: theme.border }}
           >
-            <div className="text-xs mb-2" style={{ color: theme.muted }}>
+            <div
+              className="text-[10px] sm:text-xs mb-1 sm:mb-2"
+              style={{ color: theme.muted }}
+            >
               THROTTLE
             </div>
             <div
-              className="h-2 w-full rounded-full border overflow-hidden"
+              className="h-[6px] sm:h-2 w-full rounded-full border overflow-hidden"
               style={{ background: theme.barBg, borderColor: theme.border }}
             >
               <div
@@ -560,14 +590,17 @@ export default function TelemetryPanel({
 
           {/* Brake bar */}
           <div
-            className="rounded-lg border p-3 col-span-2"
+            className="rounded-md sm:rounded-lg border p-2 sm:p-3 col-span-2"
             style={{ background: theme.tileBg, borderColor: theme.border }}
           >
-            <div className="text-xs mb-2" style={{ color: theme.muted }}>
+            <div
+              className="text-[10px] sm:text-xs mb-1 sm:mb-2"
+              style={{ color: theme.muted }}
+            >
               BRAKE
             </div>
             <div
-              className="h-2 w-full rounded-full border overflow-hidden"
+              className="h-[6px] sm:h-2 w-full rounded-full border overflow-hidden"
               style={{ background: theme.barBg, borderColor: theme.border }}
             >
               <div
@@ -581,35 +614,47 @@ export default function TelemetryPanel({
           </div>
 
           <div
-            className="rounded-lg border p-3"
+            className="rounded-md sm:rounded-lg border p-2 sm:p-3"
             style={{ background: theme.tileBg, borderColor: theme.border }}
           >
-            <div className="text-xs" style={{ color: theme.muted }}>
+            <div
+              className="text-[10px] sm:text-xs"
+              style={{ color: theme.muted }}
+            >
               DRS
             </div>
             <div
-              className="leading-none font-extrabold text-[2.2rem]"
+              className="leading-none font-extrabold text-[1.5rem] sm:text-[2.2rem]"
               style={{
                 color: liveTelemetry.drs === "ON" ? theme.green : theme.text,
               }}
             >
               {liveTelemetry.drs}
             </div>
-            <div className="text-xs" style={{ color: theme.muted }}>
+            <div
+              className="text-[10px] sm:text-xs"
+              style={{ color: theme.muted }}
+            >
               sector zones
             </div>
           </div>
           <div
-            className="rounded-lg border p-3"
+            className="rounded-md sm:rounded-lg border p-2 sm:p-3"
             style={{ background: theme.tileBg, borderColor: theme.border }}
           >
-            <div className="text-xs" style={{ color: theme.muted }}>
+            <div
+              className="text-[10px] sm:text-xs"
+              style={{ color: theme.muted }}
+            >
               LAP TIME
             </div>
-            <div className="leading-none font-extrabold text-[2rem] tabular-nums">
+            <div className="leading-none font-extrabold text-[1.3rem] sm:text-[2rem] tabular-nums">
               {liveTelemetry.lapTime}
             </div>
-            <div className="text-xs" style={{ color: theme.muted }}>
+            <div
+              className="text-[10px] sm:text-xs"
+              style={{ color: theme.muted }}
+            >
               target fastest
             </div>
           </div>
