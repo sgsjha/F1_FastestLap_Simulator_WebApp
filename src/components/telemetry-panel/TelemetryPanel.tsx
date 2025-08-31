@@ -402,20 +402,6 @@ export default function TelemetryPanel({
               seconds
             </div>
           </div>
-          <div
-            className="rounded-lg border p-3"
-            style={{ background: theme.tileBg, borderColor: theme.border }}
-          >
-            <div className="text-xs" style={{ color: theme.muted }}>
-              POSITION
-            </div>
-            <div className="leading-none font-extrabold text-lg">
-              {liveTelemetry.position}
-            </div>
-            <div className="text-xs" style={{ color: theme.muted }}>
-              X,Y coords
-            </div>
-          </div>
 
           {/* Throttle bar */}
           <div
