@@ -64,7 +64,7 @@ export function TrackVisualization({}: TrackVisualizationProps) {
   const { data: driverData = [], isLoading: isDriversLoading } = useQuery({
     queryKey: ["drivers", selectedSession?.session_key],
     queryFn: () =>
-  selectedSession 
+      selectedSession
         ? f1Api.getDrivers(selectedSession.session_key)
         : Promise.resolve([]),
     enabled: !!selectedSession,
@@ -91,7 +91,9 @@ export function TrackVisualization({}: TrackVisualizationProps) {
     enabled: !!(selectedSession && selectedDrivers.length > 0),
   });
 
-  const { data: locationData = {}, isLoading: isLocationsLoading } = useQuery<Record<number, GPSPoint[]>>({
+  const { data: locationData = {}, isLoading: isLocationsLoading } = useQuery<
+    Record<number, GPSPoint[]>
+  >({
     queryKey: [
       "locations",
       selectedSession?.session_key,
@@ -106,7 +108,8 @@ export function TrackVisualization({}: TrackVisualizationProps) {
       const perDriverFastest = selectedDrivers
         .map((driverNumber) => {
           const laps = (allLapData as Record<number, any[]>)[driverNumber];
-          if (!laps || laps.length === 0) return { driverNumber, error: true } as const;
+          if (!laps || laps.length === 0)
+            return { driverNumber, error: true } as const;
           try {
             const fastest = calculateFastestLap(laps);
             return { driverNumber, fastest: fastest.fastestLap } as const;
@@ -115,19 +118,20 @@ export function TrackVisualization({}: TrackVisualizationProps) {
           }
         })
         .filter((d) => !("error" in d)) as Array<{
-          driverNumber: number;
-          fastest: { lapTime: number; startTime: string; endTime: string };
-        }>;
+        driverNumber: number;
+        fastest: { lapTime: number; startTime: string; endTime: string };
+      }>;
 
-      if (perDriverFastest.length === 0) return {} as Record<number, GPSPoint[]>;
+      if (perDriverFastest.length === 0)
+        return {} as Record<number, GPSPoint[]>;
 
-  // Find the overall fastest lap across selected drivers
-  perDriverFastest.sort((a, b) => a.fastest.lapTime - b.fastest.lapTime);
-  const fastestDriverEntry = perDriverFastest[0];
-  const fastestDriverNumber = fastestDriverEntry.driverNumber;
+      // Find the overall fastest lap across selected drivers
+      perDriverFastest.sort((a, b) => a.fastest.lapTime - b.fastest.lapTime);
+      const fastestDriverEntry = perDriverFastest[0];
+      const fastestDriverNumber = fastestDriverEntry.driverNumber;
 
-  // Fetch location points once for the overall fastest driver's fastest lap
-  let fastestPoints: GPSPoint[] = [];
+      // Fetch location points once for the overall fastest driver's fastest lap
+      let fastestPoints: GPSPoint[] = [];
       try {
         const pts = await f1Api.getLocationData(
           selectedSession.session_key,
@@ -149,19 +153,26 @@ export function TrackVisualization({}: TrackVisualizationProps) {
         }, {} as Record<number, GPSPoint[]>);
       }
 
-  // Keep the fastestPoints as the canonical spatial path (elapsed is relative to the fastest lap)
-  const fastestMaxElapsed = fastestPoints.length > 0 ? Math.max(...fastestPoints.map((p) => p.elapsed)) : 0;
+      // Keep the fastestPoints as the canonical spatial path (elapsed is relative to the fastest lap)
+      const fastestMaxElapsed =
+        fastestPoints.length > 0
+          ? Math.max(...fastestPoints.map((p) => p.elapsed))
+          : 0;
 
-  // Set the master lap time (seconds) to the slowest lap time among selected drivers
-  // so the timeline runs until the slowest driver completes their lap. Fastest
-  // drivers will reach their end earlier and remain at the finish line.
-  const slowestLapTime = Math.max(...perDriverFastest.map((d) => d.fastest.lapTime));
-  masterLapTimeRef.current = slowestLapTime;
+      // Set the master lap time (seconds) to the slowest lap time among selected drivers
+      // so the timeline runs until the slowest driver completes their lap. Fastest
+      // drivers will reach their end earlier and remain at the finish line.
+      const slowestLapTime = Math.max(
+        ...perDriverFastest.map((d) => d.fastest.lapTime)
+      );
+      masterLapTimeRef.current = slowestLapTime;
 
       // For each driver, return the same spatial points (no per-point scaling).
       // We'll use each driver's lapDuration for pacing when rendering.
       const result = selectedDrivers.reduce((acc, driverNumber) => {
-        const entry = perDriverFastest.find((d) => d.driverNumber === driverNumber);
+        const entry = perDriverFastest.find(
+          (d) => d.driverNumber === driverNumber
+        );
         if (!entry) {
           acc[driverNumber] = [];
           return acc;
@@ -170,7 +181,7 @@ export function TrackVisualization({}: TrackVisualizationProps) {
         return acc;
       }, {} as Record<number, GPSPoint[]>);
 
-  return result as Record<number, GPSPoint[]>;
+      return result as Record<number, GPSPoint[]>;
     },
     enabled: !!(
       selectedSession &&
@@ -195,15 +206,14 @@ export function TrackVisualization({}: TrackVisualizationProps) {
     progress: 0,
     speed: 1,
   });
-  const { setAnimationProgress, setIsPlaying} = useRaceStore();
+  const { setAnimationProgress, setIsPlaying } = useRaceStore();
 
   // Process driver data
   const processedDrivers: ProcessedDriverData[] = selectedDrivers
     .map((driverNumber) => {
       const driver = driverData.find((d) => d.driver_number === driverNumber);
-      const locations = (locationData as Record<number, GPSPoint[]>)[
-        driverNumber
-      ] || [];
+      const locations =
+        (locationData as Record<number, GPSPoint[]>)[driverNumber] || [];
       // determine lapDuration (seconds) from provided lap data if available
       let lapDuration = 0;
       try {
@@ -216,7 +226,10 @@ export function TrackVisualization({}: TrackVisualizationProps) {
           lapDuration = locations[locations.length - 1].elapsed || 0;
         }
       } catch (e) {
-        lapDuration = locations.length > 0 ? locations[locations.length - 1].elapsed || 0 : 0;
+        lapDuration =
+          locations.length > 0
+            ? locations[locations.length - 1].elapsed || 0
+            : 0;
       }
 
       return {
@@ -353,12 +366,16 @@ export function TrackVisualization({}: TrackVisualizationProps) {
     if (locations.length === 0) return null;
 
     // master lap time (seconds)
-    const masterLap = masterLapTimeRef.current ?? Math.max(...locations.map((l) => l.elapsed));
+    const masterLap =
+      masterLapTimeRef.current ?? Math.max(...locations.map((l) => l.elapsed));
     // elapsed time along master timeline
     const masterElapsed = progress * masterLap;
 
     // driver progress fraction (0..1) relative to their own lap duration
-    const driverFrac = lapDuration > 0 ? Math.min(1, masterElapsed / lapDuration) : Math.min(1, progress);
+    const driverFrac =
+      lapDuration > 0
+        ? Math.min(1, masterElapsed / lapDuration)
+        : Math.min(1, progress);
 
     // map driverFrac back to fastestPoints elapsed (which are based on fastest lap)
     const fastestMax = Math.max(...locations.map((l) => l.elapsed));
@@ -417,9 +434,9 @@ export function TrackVisualization({}: TrackVisualizationProps) {
       ctx.fillText(driver.acronym, x, y - labelOffset);
 
       ctx.restore();
-  });
-  //currentPositionsRef.current = posMap;
-  //setCurrentPositions(posMap);
+    });
+    //currentPositionsRef.current = posMap;
+    //setCurrentPositions(posMap);
   };
 
   // Draw traces up to current time
@@ -434,7 +451,10 @@ export function TrackVisualization({}: TrackVisualizationProps) {
 
     processedDrivers.forEach((driver) => {
       const fastestMax = Math.max(...driver.locations.map((l) => l.elapsed));
-      const driverFrac = driver.lapDuration > 0 ? Math.min(1, masterElapsed / driver.lapDuration) : Math.min(1, progress);
+      const driverFrac =
+        driver.lapDuration > 0
+          ? Math.min(1, masterElapsed / driver.lapDuration)
+          : Math.min(1, progress);
       const currentTime = driverFrac * fastestMax;
 
       ctx.save();
@@ -510,7 +530,6 @@ export function TrackVisualization({}: TrackVisualizationProps) {
    *   // eslint-disable-next-line react-hooks/exhaustive-deps
    * }, [bounds, processedDrivers.length]);
    */
-  
 
   // RAF loop
   const animate = (ts: number) => {
@@ -520,7 +539,9 @@ export function TrackVisualization({}: TrackVisualizationProps) {
 
     if (animationState.isPlaying && processedDrivers.length > 0) {
       // use master (slowest) lap time as canonical timeline; fallback to max driver lap
-      const master = masterLapTimeRef.current ?? Math.max(...processedDrivers.map((d) => d.lapDuration));
+      const master =
+        masterLapTimeRef.current ??
+        Math.max(...processedDrivers.map((d) => d.lapDuration));
       const denom = Math.max(master, 0.0001);
       const progressIncrement = (deltaTime / denom) * animationState.speed;
       const next = Math.min(1, progressRef.current + progressIncrement);
@@ -532,12 +553,12 @@ export function TrackVisualization({}: TrackVisualizationProps) {
           ...prev,
           progress: progressRef.current,
         }));
-  setAnimationProgress(progressRef.current);
+        setAnimationProgress(progressRef.current);
       }
       if (next >= 1) {
         // Stop at end of slowest lap
         setAnimationState((prev) => ({ ...prev, isPlaying: false }));
-  setIsPlaying(false);
+        setIsPlaying(false);
       }
     }
 
@@ -741,41 +762,7 @@ export function TrackVisualization({}: TrackVisualizationProps) {
             </Badge>
           </CardTitle>
 
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                cameraRef.current = { zoom: 1, panX: 0, panY: 0 };
-                render();
-              }}
-              disabled={isLoading || processedDrivers.length === 0}
-            >
-              Reset View
-            </Button>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={togglePlayPause}
-              disabled={isLoading || processedDrivers.length === 0}
-            >
-              {animationState.isPlaying ? (
-                <Pause className="w-4 h-4" />
-              ) : (
-                <Play className="w-4 h-4" />
-              )}
-            </Button>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={resetAnimation}
-              disabled={isLoading || processedDrivers.length === 0}
-            >
-              <RotateCcw className="w-4 h-4" />
-            </Button>
-          </div>
+          <div className="flex items-center gap-2" />
         </div>
       </CardHeader>
 
@@ -799,76 +786,112 @@ export function TrackVisualization({}: TrackVisualizationProps) {
           </div>
         ) : (
           <>
-            <canvas
-              ref={canvasRef}
-              className="w-full h-[500px] lg:h-[70vh] xl:h-[80vh] bg-zinc-900 rounded-lg border"
-              style={{ imageRendering: "auto", touchAction: "none" }} // allow pointer pan on touch
-            />
+            <div className="relative">
+              <canvas
+                ref={canvasRef}
+                className="w-full h-[500px] lg:h-[70vh] xl:h-[80vh] bg-zinc-900 rounded-lg border"
+                style={{ imageRendering: "auto", touchAction: "none" }}
+              />
 
-            <div className="mt-4 space-y-4">
-              <div className="flex items-center gap-4">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-sm font-medium">Progress</span>
-                    <span className="text-xs text-muted-foreground">
+              {/* Controls overlay */}
+              <div className="pointer-events-none absolute inset-0 flex items-end justify-between p-3 gap-3">
+                <div className="pointer-events-auto flex items-center gap-2 bg-zinc-950/60 border border-white/10 rounded-md px-2.5 py-2 backdrop-blur">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={togglePlayPause}
+                    disabled={isLoading || processedDrivers.length === 0}
+                  >
+                    {animationState.isPlaying ? (
+                      <Pause className="w-4 h-4" />
+                    ) : (
+                      <Play className="w-4 h-4" />
+                    )}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={resetAnimation}
+                    disabled={isLoading || processedDrivers.length === 0}
+                    title="Restart"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      cameraRef.current = { zoom: 1, panX: 0, panY: 0 };
+                      render();
+                    }}
+                    disabled={isLoading || processedDrivers.length === 0}
+                  >
+                    Reset View
+                  </Button>
+                </div>
+
+                <div className="pointer-events-auto flex items-center gap-3 bg-zinc-950/60 border border-white/10 rounded-md px-3 py-2 backdrop-blur">
+                  <div className="flex items-center gap-2 w-56">
+                    <span className="text-xs text-zinc-300">Progress</span>
+                    <Slider
+                      value={[animationState.progress * 100]}
+                      onValueChange={(value) => {
+                        const p = value[0] / 100;
+                        progressRef.current = p;
+                        setAnimationState((prev) => ({ ...prev, progress: p }));
+                        render();
+                      }}
+                      max={100}
+                      step={1}
+                      className="w-full"
+                    />
+                    <span className="text-xs text-zinc-400 w-8 text-right">
                       {Math.round(animationState.progress * 100)}%
                     </span>
                   </div>
-                  <Slider
-                    value={[animationState.progress * 100]}
-                    onValueChange={(value) => {
-                      const p = value[0] / 100;
-                      progressRef.current = p;
-                      setAnimationState((prev) => ({ ...prev, progress: p }));
-                      render();
-                    }}
-                    max={100}
-                    step={1}
-                    className="w-full"
-                  />
-                </div>
-
-                <div className="w-32">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-sm font-medium">Speed</span>
-                    <span className="text-xs text-muted-foreground">
-                      {animationState.speed}x
+                  <div className="flex items-center gap-2 w-40">
+                    <span className="text-xs text-zinc-300">Speed</span>
+                    <Slider
+                      value={[animationState.speed]}
+                      onValueChange={(value) =>
+                        setAnimationState((prev) => ({
+                          ...prev,
+                          speed: value[0],
+                        }))
+                      }
+                      min={0.1}
+                      max={3}
+                      step={0.1}
+                      className="w-full"
+                    />
+                    <span className="text-xs text-zinc-400 w-8 text-right">
+                      {animationState.speed.toFixed(1)}x
                     </span>
                   </div>
-                  <Slider
-                    value={[animationState.speed]}
-                    onValueChange={(value) =>
-                      setAnimationState((prev) => ({
-                        ...prev,
-                        speed: value[0],
-                      }))
-                    }
-                    min={0.1}
-                    max={3}
-                    step={0.1}
-                    className="w-full"
-                  />
                 </div>
               </div>
-
-              {processedDrivers.length > 0 && (
-                <div className="flex gap-2 flex-wrap">
-                  {processedDrivers.map((driver) => (
-                    <Badge
-                      key={driver.driverNumber}
-                      variant="outline"
-                      className="text-xs"
-                    >
-                      <div
-                        className="w-2 h-2 rounded-full mr-1"
-                        style={{ backgroundColor: `#${driver.color}` }}
-                      />
-                      {driver.acronym}
-                    </Badge>
-                  ))}
-                </div>
-              )}
             </div>
+
+            {/* Keep legend below */}
+            {processedDrivers.length > 0 && (
+              <div className="mt-3 flex gap-2 flex-wrap">
+                {processedDrivers.map((driver) => (
+                  <Badge
+                    key={driver.driverNumber}
+                    variant="outline"
+                    className="text-xs"
+                  >
+                    <div
+                      className="w-2 h-2 rounded-full mr-1"
+                      style={{ backgroundColor: `#${driver.color}` }}
+                    />
+                    {driver.acronym}
+                  </Badge>
+                ))}
+              </div>
+            )}
           </>
         )}
       </CardContent>

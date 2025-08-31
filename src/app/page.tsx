@@ -16,8 +16,12 @@ export default function Home() {
         <header className="border-b border-zinc-700 bg-zinc-900/50 backdrop-blur">
           <div className="w-full px-4 py-4 flex items-center justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-white">F1 Race Analyzer</h1>
-              <p className="text-zinc-400 mt-1">Compare driver performance across the last 10 seasons</p>
+              <h1 className="text-3xl font-bold text-white">
+                F1 Race Analyzer
+              </h1>
+              <p className="text-zinc-400 mt-1">
+                Compare driver performance across the last 10 seasons
+              </p>
             </div>
             <div className="shrink-0">
               <RaceSelector />
