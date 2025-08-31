@@ -107,14 +107,17 @@ export function DriverSelector() {
 
   if (!selectedSession) {
     return (
-      <Card className="bg-zinc-950 border-zinc-800">
+      <Card
+        className="w-full h-[500px] lg:h-[70vh] xl:h-[80vh] flex flex-col rounded-xl overflow-hidden border"
+        style={{ background: "#0f0f12", borderColor: "#222" }}
+      >
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-zinc-100">
             <User className="w-5 h-5 text-zinc-400" />
             Select Drivers
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex-1">
           <p className="text-sm text-zinc-400">
             Choose a race session first to see available drivers.
           </p>
@@ -125,14 +128,17 @@ export function DriverSelector() {
 
   if (isLoading) {
     return (
-      <Card className="bg-zinc-950 border-zinc-800">
+      <Card
+        className="w-full h-[500px] lg:h-[70vh] xl:h-[80vh] flex flex-col rounded-xl overflow-hidden border"
+        style={{ background: "#0f0f12", borderColor: "#222" }}
+      >
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-zinc-100">
             <User className="w-5 h-5 text-zinc-400" />
             Select Drivers
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex-1">
           <div className="space-y-3">
             {[...Array(6)].map((_, i) => (
               <div key={i} className="flex items-center gap-3">
@@ -149,14 +155,17 @@ export function DriverSelector() {
 
   if (error) {
     return (
-      <Card className="bg-zinc-950 border-zinc-800">
+      <Card
+        className="w-full h-[500px] lg:h-[70vh] xl:h-[80vh] flex flex-col rounded-xl overflow-hidden border"
+        style={{ background: "#0f0f12", borderColor: "#222" }}
+      >
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-zinc-100">
             <User className="w-5 h-5 text-zinc-400" />
             Select Drivers
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex-1">
           <p className="text-sm text-red-400">
             Failed to load drivers. Please try again.
           </p>
@@ -166,7 +175,10 @@ export function DriverSelector() {
   }
 
   return (
-    <Card className="bg-zinc-950 border-zinc-800 w-full h-[500px] lg:h-[70vh] xl:h-[80vh] flex flex-col">
+    <Card
+      className="w-full h-[500px] lg:h-[70vh] xl:h-[80vh] flex flex-col rounded-xl overflow-hidden border"
+      style={{ background: "#0f0f12", borderColor: "#222" }}
+    >
       <CardHeader className="pb-2">
         <CardTitle className="flex items-center gap-2 text-zinc-100">
           <User className="w-5 h-5 text-zinc-400" />
@@ -233,7 +245,7 @@ export function DriverSelector() {
                           variant="outline"
                           className="ml-1 border-purple-400/40 text-purple-300 bg-purple-500/10 text-[10px] px-1 py-0 leading-none h-4 rounded-sm whitespace-nowrap"
                         >
-                          Fastest Selected
+                          FS
                         </Badge>
                       )}
                     </span>

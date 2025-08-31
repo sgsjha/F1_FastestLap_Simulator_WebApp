@@ -403,7 +403,7 @@ export default function TelemetryPanel({
   if (!selectedSession || selectedDrivers.length === 0) {
     return (
       <Card
-        className="border rounded-xl overflow-hidden"
+        className="border rounded-xl overflow-hidden w-full h-[500px] lg:h-[70vh] xl:h-[80vh] flex flex-col"
         style={{
           background: theme.panel,
           borderColor: theme.border,

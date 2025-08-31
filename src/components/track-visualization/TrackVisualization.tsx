@@ -728,7 +728,10 @@ export function TrackVisualization({}: TrackVisualizationProps) {
 
   if (!selectedSession) {
     return (
-      <Card className="w-full h-[500px] lg:h-[70vh] xl:h-[80vh] flex items-center justify-center border-0 bg-transparent shadow-none py-0">
+      <Card
+        className="w-full h-[500px] lg:h-[70vh] xl:h-[80vh] flex items-center justify-center rounded-xl overflow-hidden border"
+        style={{ background: "#0f0f12", borderColor: "#222" }}
+      >
         <CardContent className="p-0 w-full h-full">
           <div className="text-center">
             <Zap className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
@@ -744,7 +747,10 @@ export function TrackVisualization({}: TrackVisualizationProps) {
 
   if (selectedDrivers.length === 0) {
     return (
-      <Card className="w-full h-[500px] lg:h-[70vh] xl:h-[80vh] flex items-center justify-center border-0 bg-transparent shadow-none py-0">
+      <Card
+        className="w-full h-[500px] lg:h-[70vh] xl:h-[80vh] flex items-center justify-center rounded-xl overflow-hidden border"
+        style={{ background: "#0f0f12", borderColor: "#222" }}
+      >
         <CardContent className="p-0 w-full h-full">
           <div className="text-center">
             <Zap className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
@@ -759,7 +765,10 @@ export function TrackVisualization({}: TrackVisualizationProps) {
   }
 
   return (
-    <Card className="rounded-xl overflow-hidden border-0 bg-transparent shadow-none w-full h-[500px] lg:h-[70vh] xl:h-[80vh] flex flex-col py-0">
+    <Card
+      className="rounded-xl overflow-hidden border w-full h-[500px] lg:h-[70vh] xl:h-[80vh] flex flex-col py-0"
+      style={{ background: "#0f0f12", borderColor: "#222" }}
+    >
       <CardContent className="p-0 flex-1">
         {isLoading ? (
           <div className="h-full flex items-center justify-center bg-muted/20 rounded-lg">
@@ -783,8 +792,12 @@ export function TrackVisualization({}: TrackVisualizationProps) {
             <div className="relative h-full">
               <canvas
                 ref={canvasRef}
-                className="w-full h-full bg-zinc-900 rounded-lg"
-                style={{ imageRendering: "auto", touchAction: "none" }}
+                className="w-full h-full"
+                style={{
+                  imageRendering: "auto",
+                  touchAction: "none",
+                  background: "#0f0f12",
+                }}
               />
 
               {/* Controls overlay - single full-width bar */}
