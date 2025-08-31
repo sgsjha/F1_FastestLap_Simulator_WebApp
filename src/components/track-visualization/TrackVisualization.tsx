@@ -720,8 +720,8 @@ export function TrackVisualization({}: TrackVisualizationProps) {
 
   if (!selectedSession) {
     return (
-      <Card className="h-[600px] flex items-center justify-center">
-        <CardContent>
+      <Card className="h-[600px] flex items-center justify-center border-0 bg-transparent shadow-none">
+        <CardContent className="p-0">
           <div className="text-center">
             <Zap className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-lg font-semibold mb-2">Ready to Analyze</h3>
@@ -736,8 +736,8 @@ export function TrackVisualization({}: TrackVisualizationProps) {
 
   if (selectedDrivers.length === 0) {
     return (
-      <Card className="h-[600px] flex items-center justify-center">
-        <CardContent>
+      <Card className="h-[600px] flex items-center justify-center border-0 bg-transparent shadow-none">
+        <CardContent className="p-0">
           <div className="text-center">
             <Zap className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-lg font-semibold mb-2">Select Drivers</h3>
@@ -751,22 +751,8 @@ export function TrackVisualization({}: TrackVisualizationProps) {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <Zap className="w-5 h-5" />
-            Track Visualization
-            <Badge variant="outline">
-              {selectedSession.location} - {selectedSession.session_name}
-            </Badge>
-          </CardTitle>
-
-          <div className="flex items-center gap-2" />
-        </div>
-      </CardHeader>
-
-      <CardContent>
+    <Card className="rounded-xl overflow-hidden border-0 bg-transparent shadow-none">
+      <CardContent className="p-0">
         {isLoading ? (
           <div className="h-[500px] flex items-center justify-center bg-muted/20 rounded-lg">
             <div className="text-center space-y-2">
@@ -789,13 +775,13 @@ export function TrackVisualization({}: TrackVisualizationProps) {
             <div className="relative">
               <canvas
                 ref={canvasRef}
-                className="w-full h-[500px] lg:h-[70vh] xl:h-[80vh] bg-zinc-900 rounded-lg border"
+                className="w-full h-[500px] lg:h-[70vh] xl:h-[80vh] bg-zinc-900 rounded-lg"
                 style={{ imageRendering: "auto", touchAction: "none" }}
               />
 
               {/* Controls overlay */}
               <div className="pointer-events-none absolute inset-0 flex items-end justify-between p-3 gap-3">
-                <div className="pointer-events-auto flex items-center gap-2 bg-zinc-950/60 border border-white/10 rounded-md px-2.5 py-2 backdrop-blur">
+                <div className="pointer-events-auto flex items-center gap-2 bg-zinc-950/60 border border-[#2a2b31] rounded-md px-2.5 py-2 backdrop-blur">
                   <Button
                     variant="outline"
                     size="icon"
@@ -832,7 +818,7 @@ export function TrackVisualization({}: TrackVisualizationProps) {
                   </Button>
                 </div>
 
-                <div className="pointer-events-auto flex items-center gap-3 bg-zinc-950/60 border border-white/10 rounded-md px-3 py-2 backdrop-blur">
+                <div className="pointer-events-auto flex items-center gap-3 bg-zinc-950/60 border border-[#2a2b31] rounded-md px-3 py-2 backdrop-blur">
                   <div className="flex items-center gap-2 w-56">
                     <span className="text-xs text-zinc-300">Progress</span>
                     <Slider
@@ -873,25 +859,6 @@ export function TrackVisualization({}: TrackVisualizationProps) {
                 </div>
               </div>
             </div>
-
-            {/* Keep legend below */}
-            {processedDrivers.length > 0 && (
-              <div className="mt-3 flex gap-2 flex-wrap">
-                {processedDrivers.map((driver) => (
-                  <Badge
-                    key={driver.driverNumber}
-                    variant="outline"
-                    className="text-xs"
-                  >
-                    <div
-                      className="w-2 h-2 rounded-full mr-1"
-                      style={{ backgroundColor: `#${driver.color}` }}
-                    />
-                    {driver.acronym}
-                  </Badge>
-                ))}
-              </div>
-            )}
           </>
         )}
       </CardContent>
