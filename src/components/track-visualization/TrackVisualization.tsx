@@ -779,82 +779,89 @@ export function TrackVisualization({}: TrackVisualizationProps) {
                 style={{ imageRendering: "auto", touchAction: "none" }}
               />
 
-              {/* Controls overlay */}
-              <div className="pointer-events-none absolute inset-0 flex items-end justify-between p-3 gap-3">
-                <div className="pointer-events-auto flex items-center gap-2 bg-zinc-950/60 border border-[#2a2b31] rounded-md px-2.5 py-2 backdrop-blur">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={togglePlayPause}
-                    disabled={isLoading || processedDrivers.length === 0}
-                  >
-                    {animationState.isPlaying ? (
-                      <Pause className="w-4 h-4" />
-                    ) : (
-                      <Play className="w-4 h-4" />
-                    )}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={resetAnimation}
-                    disabled={isLoading || processedDrivers.length === 0}
-                    title="Restart"
-                  >
-                    <RotateCcw className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      cameraRef.current = { zoom: 1, panX: 0, panY: 0 };
-                      render();
-                    }}
-                    disabled={isLoading || processedDrivers.length === 0}
-                  >
-                    Reset View
-                  </Button>
-                </div>
-
-                <div className="pointer-events-auto flex items-center gap-3 bg-zinc-950/60 border border-[#2a2b31] rounded-md px-3 py-2 backdrop-blur">
-                  <div className="flex items-center gap-2 w-56">
-                    <span className="text-xs text-zinc-300">Progress</span>
-                    <Slider
-                      value={[animationState.progress * 100]}
-                      onValueChange={(value) => {
-                        const p = value[0] / 100;
-                        progressRef.current = p;
-                        setAnimationState((prev) => ({ ...prev, progress: p }));
+              {/* Controls overlay - single full-width bar */}
+              <div className="pointer-events-none absolute inset-0 flex items-end p-3">
+                <div className="pointer-events-auto flex w-full items-center justify-between gap-4 rounded-[12px] px-3 py-2 bg-[rgba(15,15,18,0.65)] backdrop-blur-md border border-[#2a2b31]">
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-7 w-7 p-0"
+                      onClick={togglePlayPause}
+                      disabled={isLoading || processedDrivers.length === 0}
+                      title={animationState.isPlaying ? "Pause" : "Play"}
+                    >
+                      {animationState.isPlaying ? (
+                        <Pause className="w-[14px] h-[14px]" />
+                      ) : (
+                        <Play className="w-[14px] h-[14px]" />
+                      )}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-7 w-7 p-0"
+                      onClick={resetAnimation}
+                      disabled={isLoading || processedDrivers.length === 0}
+                      title="Restart"
+                    >
+                      <RotateCcw className="w-[14px] h-[14px]" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 px-2 text-xs leading-none"
+                      onClick={() => {
+                        cameraRef.current = { zoom: 1, panX: 0, panY: 0 };
                         render();
                       }}
-                      max={100}
-                      step={1}
-                      className="w-full"
-                    />
-                    <span className="text-xs text-zinc-400 w-8 text-right">
-                      {Math.round(animationState.progress * 100)}%
-                    </span>
+                      disabled={isLoading || processedDrivers.length === 0}
+                    >
+                      Reset View
+                    </Button>
                   </div>
-                  <div className="flex items-center gap-2 w-40">
-                    <span className="text-xs text-zinc-300">Speed</span>
-                    <Slider
-                      value={[animationState.speed]}
-                      onValueChange={(value) =>
-                        setAnimationState((prev) => ({
-                          ...prev,
-                          speed: value[0],
-                        }))
-                      }
-                      min={0.1}
-                      max={3}
-                      step={0.1}
-                      className="w-full"
-                    />
-                    <span className="text-xs text-zinc-400 w-8 text-right">
-                      {animationState.speed.toFixed(1)}x
-                    </span>
+
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2 w-56">
+                      <span className="text-xs text-zinc-300">Progress</span>
+                      <Slider
+                        value={[animationState.progress * 100]}
+                        onValueChange={(value) => {
+                          const p = value[0] / 100;
+                          progressRef.current = p;
+                          setAnimationState((prev) => ({
+                            ...prev,
+                            progress: p,
+                          }));
+                          render();
+                        }}
+                        max={100}
+                        step={1}
+                        className="w-full"
+                      />
+                      <span className="text-xs text-zinc-400 w-8 text-right">
+                        {Math.round(animationState.progress * 100)}%
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 w-40">
+                      <span className="text-xs text-zinc-300">Speed</span>
+                      <Slider
+                        value={[animationState.speed]}
+                        onValueChange={(value) =>
+                          setAnimationState((prev) => ({
+                            ...prev,
+                            speed: value[0],
+                          }))
+                        }
+                        min={0.1}
+                        max={3}
+                        step={0.1}
+                        className="w-full"
+                      />
+                      <span className="text-xs text-zinc-400 w-8 text-right">
+                        {animationState.speed.toFixed(1)}x
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
