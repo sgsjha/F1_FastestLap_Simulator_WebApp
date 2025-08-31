@@ -390,7 +390,9 @@ export default function TelemetryPanel({
       gear: closestPoint.n_gear ? closestPoint.n_gear.toString() : "—",
       throttle: closestPoint.throttle || 0,
       brake: closestPoint.brake || 0,
-      drs: closestPoint.drs ? (closestPoint.drs > 0 ? "ON" : "OFF") : "OFF",
+      // DRS mapping per spec:
+      // 0 or 1 => OFF; 10, 12, or 14 => ON; anything else defaults to OFF
+      drs: [10, 12, 14].includes(Number(closestPoint.drs ?? 0)) ? "ON" : "OFF",
       elapsed: currentTime,
       position: currentPosition,
       lapTime: fastestLapTime,
