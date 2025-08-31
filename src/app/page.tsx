@@ -30,14 +30,14 @@ export default function Home() {
         </header>
 
         <main className="w-full px-4 py-8">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start w-full">
-            <div className="space-y-6 order-1">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start w-full">
+            <div className="space-y-6 order-1 lg:col-span-3 xl:col-span-3">
               <DriverSelector />
             </div>
-            <div className="order-2 w-full">
+            <div className="order-2 w-full lg:col-span-6 xl:col-span-6">
               <TrackVisualization />
             </div>
-            <div className="space-y-6 order-3 w-full">
+            <div className="space-y-6 order-3 w-full lg:col-span-3 xl:col-span-3">
               <TelemetryPanel />
             </div>
           </div>
