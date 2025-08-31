@@ -25,6 +25,45 @@ export function DriverSelector() {
     enabled: !!selectedSession,
   });
 
+  // Session-wide fastest driver (across all drivers in session)
+  const { data: sessionFastest } = useQuery<{
+    driverNumber: number;
+    lapTime: number;
+  } | null>({
+    queryKey: ["session-fastest", selectedSession?.session_key],
+    queryFn: async () => {
+      if (!selectedSession) return null;
+      const allDrivers = await f1Api.getDrivers(selectedSession.session_key);
+      const lapResults = await Promise.all(
+        allDrivers.map(async (d: any) => {
+          try {
+            const laps = await f1Api.getLaps(
+              selectedSession.session_key,
+              d.driver_number
+            );
+            if (!laps || laps.length === 0) return null;
+            const f = calculateFastestLap(laps);
+            return {
+              driverNumber: d.driver_number,
+              lapTime: f.fastestLap.lapTime,
+            } as const;
+          } catch {
+            return null;
+          }
+        })
+      );
+      const valid = lapResults.filter(Boolean) as Array<{
+        driverNumber: number;
+        lapTime: number;
+      }>;
+      if (valid.length === 0) return null;
+      valid.sort((a, b) => a.lapTime - b.lapTime);
+      return valid[0];
+    },
+    enabled: !!selectedSession,
+    staleTime: 60_000,
+  });
+
   // Find the fastest driver among currently selected (by fastest lap time)
   const { data: fastestInfo } = useQuery<{
     fastestDriverNumber: number;
@@ -147,7 +186,9 @@ export function DriverSelector() {
         <div className="space-y-2 h-full overflow-y-auto pr-1">
           {drivers?.map((driver) => {
             const isSelected = selectedDrivers.includes(driver.driver_number);
-            const isFastest =
+            const isSessionFastest =
+              sessionFastest?.driverNumber === driver.driver_number;
+            const isFastestSelected =
               fastestInfo?.fastestDriverNumber === driver.driver_number;
             return (
               <div
@@ -179,13 +220,21 @@ export function DriverSelector() {
                       <span className="ml-1 text-xs text-zinc-400">
                         #{driver.driver_number}
                       </span>
-                      {isFastest && (
-                        <span title="Fastest lap among selected">
+                      {isSessionFastest && (
+                        <span title="Fastest lap in session">
                           <Timer
                             className="w-3.5 h-3.5 text-purple-400"
-                            aria-label="Fastest driver"
+                            aria-label="Fastest overall"
                           />
                         </span>
+                      )}
+                      {isFastestSelected && (
+                        <Badge
+                          variant="outline"
+                          className="ml-1 border-purple-400/40 text-purple-300 bg-purple-500/10 text-[10px] px-1 py-0 leading-none h-4 rounded-sm whitespace-nowrap"
+                        >
+                          Fastest Selected
+                        </Badge>
                       )}
                     </span>
                   </label>

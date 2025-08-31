@@ -557,7 +557,7 @@ export function TrackVisualization({}: TrackVisualizationProps) {
         }));
       }
       if (next >= 1) {
-        // Stop at end of slowest lap and snap progress to 1.0 for UI consumers
+        // Stop at end of slowest lap and snap progress to 1.0 for UI consumerss
         progressRef.current = 1;
         setAnimationState((prev) => ({
           ...prev,

@@ -92,6 +92,45 @@ export default function TelemetryPanel({
     enabled: !!(selectedSession && selectedDrivers.length > 0),
   });
 
+  // Session-wide fastest driver (across all drivers in the session)
+  const { data: sessionFastest } = useQuery<{
+    driverNumber: number;
+    lapTime: number;
+  } | null>({
+    queryKey: ["session-fastest", selectedSession?.session_key],
+    queryFn: async () => {
+      if (!selectedSession) return null;
+      const allDrivers = await f1Api.getDrivers(selectedSession.session_key);
+      const lapResults = await Promise.all(
+        allDrivers.map(async (d: any) => {
+          try {
+            const laps = await f1Api.getLaps(
+              selectedSession.session_key,
+              d.driver_number
+            );
+            if (!laps || laps.length === 0) return null;
+            const f = calculateFastestLap(laps);
+            return {
+              driverNumber: d.driver_number,
+              lapTime: f.fastestLap.lapTime,
+            } as const;
+          } catch {
+            return null;
+          }
+        })
+      );
+      const valid = lapResults.filter(Boolean) as Array<{
+        driverNumber: number;
+        lapTime: number;
+      }>;
+      if (valid.length === 0) return null;
+      valid.sort((a, b) => a.lapTime - b.lapTime);
+      return valid[0];
+    },
+    enabled: !!selectedSession,
+    staleTime: 60_000,
+  });
+
   // Use focus driver or first selected driver
   const [localFocusDriver, setLocalFocusDriver] = useState<number | undefined>(
     undefined
@@ -401,15 +440,26 @@ export default function TelemetryPanel({
           />
           <div>
             <div className="font-bold tracking-wide flex items-center gap-1">
-              <span>{driver?.name_acronym ?? "DRV"}</span>
-              {currentDriver && fastestDriverNumber === currentDriver && (
-                <span title="Fastest lap among selected">
-                  <Timer
-                    className="w-3.5 h-3.5 text-purple-400"
-                    aria-label="Fastest driver"
-                  />
-                </span>
-              )}
+              <span className="inline-flex items-center gap-1">
+                <span>{driver?.name_acronym ?? "DRV"}</span>
+                {currentDriver &&
+                  sessionFastest?.driverNumber === currentDriver && (
+                    <span title="Fastest lap in session">
+                      <Timer
+                        className="w-3.5 h-3.5 text-purple-400"
+                        aria-label="Fastest overall"
+                      />
+                    </span>
+                  )}
+                {currentDriver && fastestDriverNumber === currentDriver && (
+                  <Badge
+                    variant="outline"
+                    className="ml-1 border-purple-400/40 text-purple-300 bg-purple-500/10 text-[10px] px-1 py-0 leading-none h-4 rounded-sm whitespace-nowrap"
+                  >
+                    FS
+                  </Badge>
+                )}
+              </span>
               <span>• {driver?.full_name?.split(" ")[0] ?? ""}</span>
             </div>
             <div className="text-sm" style={{ color: theme.muted }}>
@@ -581,7 +631,8 @@ export default function TelemetryPanel({
               const d = drivers.find((x) => x.driver_number === dn);
               const teamColor = `#${d?.team_colour ?? "777"}`;
               const isActive = dn === currentDriver;
-              const isFastest = dn === fastestDriverNumber;
+              const isFastestSelected = dn === fastestDriverNumber;
+              const isSessionFastest = dn === sessionFastest?.driverNumber;
               return (
                 <button
                   key={`focus-${dn}`}
@@ -602,13 +653,21 @@ export default function TelemetryPanel({
                   />
                   <span className="font-semibold inline-flex items-center gap-1">
                     {d?.name_acronym ?? dn}
-                    {isFastest && (
-                      <span title="Fastest lap among selected">
+                    {isSessionFastest && (
+                      <span title="Fastest lap in session">
                         <Timer
                           className="w-3 h-3 text-purple-400"
-                          aria-label="Fastest driver"
+                          aria-label="Fastest overall"
                         />
                       </span>
+                    )}
+                    {isFastestSelected && (
+                      <Badge
+                        variant="outline"
+                        className="ml-1 border-purple-400/40 text-purple-300 bg-purple-500/10 text-[10px] px-1 py-0 leading-none h-4 rounded-sm whitespace-nowrap"
+                      >
+                        FS
+                      </Badge>
                     )}
                   </span>
                   {isActive ? (
