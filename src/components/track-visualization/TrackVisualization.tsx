@@ -546,18 +546,25 @@ export function TrackVisualization({}: TrackVisualizationProps) {
       const progressIncrement = (deltaTime / denom) * animationState.speed;
       const next = Math.min(1, progressRef.current + progressIncrement);
       progressRef.current = next;
-      // Lightly sync UI slider at ~6-10 fps to avoid re-render every frame
+      // Always sync the shared store so other panels (telemetry) stay frame-accurate
+      setAnimationProgress(progressRef.current);
+      // Lightly sync local UI state (slider) at ~6-10 fps to avoid re-render every frame
       if (ts - lastUIUpdateRef.current > 150) {
         lastUIUpdateRef.current = ts;
         setAnimationState((prev) => ({
           ...prev,
           progress: progressRef.current,
         }));
-        setAnimationProgress(progressRef.current);
       }
       if (next >= 1) {
-        // Stop at end of slowest lap
-        setAnimationState((prev) => ({ ...prev, isPlaying: false }));
+        // Stop at end of slowest lap and snap progress to 1.0 for UI consumers
+        progressRef.current = 1;
+        setAnimationState((prev) => ({
+          ...prev,
+          isPlaying: false,
+          progress: 1,
+        }));
+        setAnimationProgress(1);
         setIsPlaying(false);
       }
     }
@@ -710,6 +717,7 @@ export function TrackVisualization({}: TrackVisualizationProps) {
   const resetAnimation = () => {
     progressRef.current = 0;
     setAnimationState((prev) => ({ ...prev, isPlaying: false, progress: 0 }));
+    setAnimationProgress(0);
     render();
   };
 
@@ -833,6 +841,7 @@ export function TrackVisualization({}: TrackVisualizationProps) {
                             ...prev,
                             progress: p,
                           }));
+                          setAnimationProgress(p);
                           render();
                         }}
                         max={100}

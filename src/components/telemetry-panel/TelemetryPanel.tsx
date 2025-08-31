@@ -30,6 +30,21 @@ const theme = {
   red: "#ef4444",
 };
 
+// Format seconds as mm:ss.sss (e.g., 1:23.456)
+function formatTime(totalSeconds?: number): string {
+  if (totalSeconds == null || !isFinite(totalSeconds) || totalSeconds < 0) {
+    return "—";
+  }
+  const msTotal = Math.round(totalSeconds * 1000);
+  const minutes = Math.floor(msTotal / 60000);
+  const seconds = Math.floor((msTotal % 60000) / 1000);
+  const ms = msTotal % 1000;
+  return `${minutes}:${String(seconds).padStart(2, "0")}.${String(ms).padStart(
+    3,
+    "0"
+  )}`;
+}
+
 export default function TelemetryPanel({
   animationProgress,
   locationData = {},
@@ -207,13 +222,48 @@ export default function TelemetryPanel({
     const driverCarData = carData[currentDriver];
     const driverLocations = locationData[currentDriver] || [];
 
-    // Get lap duration
-    const lapDuration =
-      driverLocations.length > 0
-        ? driverLocations[driverLocations.length - 1]?.elapsed || 0
-        : driverCarData[driverCarData.length - 1]?.elapsed || 0;
+    // Prefer the official fastest lap time from lap timing as the authoritative duration
+    let authoritativeLapSecs = 0;
+    try {
+      if (allLapData[currentDriver]?.length > 0) {
+        const fastest = calculateFastestLap(allLapData[currentDriver]);
+        authoritativeLapSecs = fastest.fastestLap.lapTime;
+      }
+    } catch {}
 
-    const currentTime = progress * lapDuration;
+    // Fallbacks to sampled streams if timing not available
+    if (!authoritativeLapSecs) {
+      if (driverLocations.length > 0) {
+        authoritativeLapSecs =
+          driverLocations[driverLocations.length - 1]?.elapsed || 0;
+      } else if (driverCarData.length > 0) {
+        authoritativeLapSecs =
+          driverCarData[driverCarData.length - 1]?.elapsed || 0;
+      }
+    }
+
+    const lapDuration = authoritativeLapSecs; // for readability below
+    // Determine master (slowest) lap time among selected drivers for the shared timeline
+    let masterTimelineSecs = lapDuration;
+    try {
+      const times: number[] = [];
+      for (const key of Object.keys(allLapData || {})) {
+        const dn = Number(key);
+        const laps = (allLapData as any)[dn];
+        if (laps && laps.length > 0) {
+          const f = calculateFastestLap(laps);
+          times.push(f.fastestLap.lapTime);
+        }
+      }
+      if (times.length > 0) masterTimelineSecs = Math.max(...times);
+    } catch {}
+
+    const EPS = 1e-4;
+    const normProgress = Math.min(1, Math.max(0, progress));
+    const snapProgress = normProgress >= 1 - EPS ? 1 : normProgress;
+    // Elapsed along the shared timeline (slowest lap), clamped by this driver's lap duration
+    const masterElapsed = snapProgress * (masterTimelineSecs || 0);
+    const currentTime = Math.min(masterElapsed, lapDuration || 0);
 
     // Find the closest car data point to current time
     let closestPoint = driverCarData[0];
@@ -271,7 +321,7 @@ export default function TelemetryPanel({
     if (allLapData[currentDriver]?.length > 0) {
       try {
         const fastest = calculateFastestLap(allLapData[currentDriver]);
-        fastestLapTime = fastest.fastestLap.lapTime.toFixed(3);
+        fastestLapTime = formatTime(fastest.fastestLap.lapTime);
       } catch (e) {
         // Handle error silently
       }
@@ -399,11 +449,11 @@ export default function TelemetryPanel({
             <div className="text-xs" style={{ color: theme.muted }}>
               ELAPSED
             </div>
-            <div className="leading-none font-extrabold text-[2.2rem] tabular-nums">
-              {liveTelemetry.elapsed.toFixed(3)}
+            <div className="leading-none font-extrabold text-[2rem] tabular-nums">
+              {formatTime(liveTelemetry.elapsed)}
             </div>
             <div className="text-xs" style={{ color: theme.muted }}>
-              seconds
+              mm:ss.sss
             </div>
           </div>
 
@@ -477,7 +527,7 @@ export default function TelemetryPanel({
             <div className="text-xs" style={{ color: theme.muted }}>
               LAP TIME
             </div>
-            <div className="leading-none font-extrabold text-[2.2rem] tabular-nums">
+            <div className="leading-none font-extrabold text-[2rem] tabular-nums">
               {liveTelemetry.lapTime}
             </div>
             <div className="text-xs" style={{ color: theme.muted }}>
