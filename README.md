@@ -35,8 +35,8 @@ If your deployment URL differs, update these links here.
 ## 🖼️ Screenshots
 
 <p align="center">
-	<img src="./public/screenshots/home.png" alt="Home" width="48%" />
-	<img src="./public/screenshots/analyse.png" alt="Analyzer" width="48%" />
+	<img src="./public/screenshots/home.png" alt="Home" width="70%" />
+	<img src="./public/screenshots/analyse.png" alt="Analyzer" width=70%" />
 <br/>
 	<em>Home and Analyzer views</em>
 </p>
