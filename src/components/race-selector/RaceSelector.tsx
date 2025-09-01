@@ -76,81 +76,87 @@ export function RaceSelector() {
   }
 
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex flex-wrap items-center gap-2 md:gap-3">
       {/* Year */}
-      <Select value={selectedYear.toString()} onValueChange={handleYearChange}>
-        <SelectTrigger className="h-9 min-w-[110px] bg-zinc-900/50 border border-zinc-700 text-zinc-100 hover:bg-zinc-800/60">
-          <SelectValue placeholder="Year" />
-        </SelectTrigger>
-        <SelectContent className="bg-zinc-900 border border-zinc-700 text-zinc-100">
-          {YEARS.map((year) => (
-            <SelectItem key={year} value={year.toString()}>
-              {year}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <div className="w-auto">
+        <Select value={selectedYear.toString()} onValueChange={handleYearChange}>
+          <SelectTrigger className="h-9 bg-zinc-900/50 border border-zinc-700 text-zinc-100 hover:bg-zinc-800/60 min-w-[110px]">
+            <SelectValue placeholder="Year" />
+          </SelectTrigger>
+          <SelectContent className="bg-zinc-900 border border-zinc-700 text-zinc-100">
+            {YEARS.map((year) => (
+              <SelectItem key={year} value={year.toString()}>
+                {year}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
       {/* Weekend */}
-      <Select
-        value={selectedMeetingKey?.toString() || ""}
-        onValueChange={(meetingKey) => {
-          setSelectedMeetingKey(parseInt(meetingKey));
-          setSelectedSession(null);
-        }}
-        disabled={!sessions || isLoading}
-      >
-        <SelectTrigger className="h-9 min-w-[200px] bg-zinc-900/50 border border-zinc-700 text-zinc-100 hover:bg-zinc-800/60 disabled:opacity-50">
-          <SelectValue placeholder={isLoading ? "Loading…" : "Weekend"} />
-        </SelectTrigger>
-        <SelectContent className="bg-zinc-900 border border-zinc-700 text-zinc-100 max-h-80">
-          {Object.values(groupedSessions).map((meeting: any) => (
-            <SelectItem key={meeting.meeting_key} value={meeting.meeting_key.toString()}>
-              <div className="flex items-center gap-2">
-                <MapPin className="w-3 h-3" />
-                <span>{meeting.location}</span>
-                <span className="text-xs text-zinc-400">
-                  {format(new Date(meeting.date_start), "MMM d")}
-                </span>
-              </div>
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <div className="w-auto">
+        <Select
+          value={selectedMeetingKey?.toString() || ""}
+          onValueChange={(meetingKey) => {
+            setSelectedMeetingKey(parseInt(meetingKey));
+            setSelectedSession(null);
+          }}
+          disabled={!sessions || isLoading}
+        >
+          <SelectTrigger className="h-9 bg-zinc-900/50 border border-zinc-700 text-zinc-100 hover:bg-zinc-800/60 disabled:opacity-50 min-w-[200px]">
+            <SelectValue placeholder={isLoading ? "Loading…" : "Weekend"} />
+          </SelectTrigger>
+          <SelectContent className="bg-zinc-900 border border-zinc-700 text-zinc-100 max-h-80">
+            {Object.values(groupedSessions).map((meeting: any) => (
+              <SelectItem key={meeting.meeting_key} value={meeting.meeting_key.toString()}>
+                <div className="flex items-center gap-2">
+                  <MapPin className="w-3 h-3" />
+                  <span>{meeting.location}</span>
+                  <span className="text-xs text-zinc-400">
+                    {format(new Date(meeting.date_start), "MMM d")}
+                  </span>
+                </div>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
-      {/* Session */}
-      <Select
-        value={selectedSession?.session_key?.toString() || ""}
-        onValueChange={handleSessionChange}
-        disabled={!selectedMeetingKey}
-      >
-        <SelectTrigger className="h-9 min-w-[200px] bg-zinc-900/50 border border-zinc-700 text-zinc-100 hover:bg-zinc-800/60 disabled:opacity-50">
-          <SelectValue placeholder="Session" />
-        </SelectTrigger>
-        <SelectContent className="bg-zinc-900 border border-zinc-700 text-zinc-100 max-h-80">
-          {selectedMeetingKey &&
-            groupedSessions[selectedMeetingKey]?.sessions
-              .sort(
-                (a: any, b: any) =>
-                  new Date(a.date_start).getTime() - new Date(b.date_start).getTime()
-              )
-              .map((session: any) => (
-                <SelectItem key={session.session_key} value={session.session_key.toString()}>
-                  <div className="flex items-center gap-2">
-                    <Badge
-                      variant={session.session_type === "Race" ? "default" : "secondary"}
-                      className="text-[10px]"
-                    >
-                      {session.session_name}
-                    </Badge>
-                    <span className="text-xs text-zinc-400">
-                      {format(new Date(session.date_start), "EEE HH:mm")}
-                    </span>
-                  </div>
-                </SelectItem>
-              ))}
-        </SelectContent>
-      </Select>
+    {/* Session (wraps on small screens, fixed width) */}
+    <div className="basis-full sm:basis-auto w-auto">
+        <Select
+          value={selectedSession?.session_key?.toString() || ""}
+          onValueChange={handleSessionChange}
+          disabled={!selectedMeetingKey}
+        >
+      <SelectTrigger className="h-9 min-w-[200px] bg-zinc-900/50 border border-zinc-700 text-zinc-100 hover:bg-zinc-800/60 disabled:opacity-50">
+            <SelectValue placeholder="Session" />
+          </SelectTrigger>
+          <SelectContent className="bg-zinc-900 border border-zinc-700 text-zinc-100 max-h-80">
+            {selectedMeetingKey &&
+              groupedSessions[selectedMeetingKey]?.sessions
+                .sort(
+                  (a: any, b: any) =>
+                    new Date(a.date_start).getTime() - new Date(b.date_start).getTime()
+                )
+                .map((session: any) => (
+                  <SelectItem key={session.session_key} value={session.session_key.toString()}>
+                    <div className="flex items-center gap-2">
+                      <Badge
+                        variant={session.session_type === "Race" ? "default" : "secondary"}
+                        className="text-[10px]"
+                      >
+                        {session.session_name}
+                      </Badge>
+                      <span className="text-xs text-zinc-400">
+                        {format(new Date(session.date_start), "EEE HH:mm")}
+                      </span>
+                    </div>
+                  </SelectItem>
+                ))}
+          </SelectContent>
+        </Select>
+      </div>
     </div>
   );
 }
