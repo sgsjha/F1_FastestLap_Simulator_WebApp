@@ -16,8 +16,8 @@ Compare F1 drivers lap-by-lap with a live track canvas and synchronized telemetr
 
 ---
 
-- Live demo: https://f1-fastestlap-simulator.vercel.app/home
-- Analyzer: https://f1-fastestlap-simulator.vercel.app/analyse
+- Live demo: https://f1-fastest-lap-simulator-web-app.vercel.app/home
+- Analyzer: https://f1-fastest-lap-simulator-web-app.vercel.app/analyse
 
 If your deployment URL differs, update these links here.
 
