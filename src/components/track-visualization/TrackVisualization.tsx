@@ -802,36 +802,36 @@ export function TrackVisualization({}: TrackVisualizationProps) {
 
               {/* Controls overlay - single full-width bar */}
               <div className="pointer-events-none absolute inset-0 flex items-end p-3">
-                <div className="pointer-events-auto flex w-full items-center justify-between gap-3 rounded-[12px] px-2 py-1.5 sm:px-3 sm:py-2 bg-[rgba(15,15,18,0.65)] backdrop-blur-md border border-[#2a2b31] overflow-x-auto whitespace-nowrap">
+                <div className="pointer-events-auto flex w-full items-center justify-between gap-2 sm:gap-3 rounded-[12px] px-1.5 py-1 sm:px-3 sm:py-2 bg-[rgba(15,15,18,0.65)] backdrop-blur-md border border-[#2a2b31] overflow-hidden flex-wrap sm:flex-nowrap">
                   <div className="flex items-center gap-2 shrink-0">
                     <Button
                       variant="outline"
                       size="icon"
-                      className="h-7 w-7 p-0"
+                      className="h-6 w-6 sm:h-7 sm:w-7 p-0"
                       onClick={togglePlayPause}
                       disabled={isLoading || processedDrivers.length === 0}
                       title={animationState.isPlaying ? "Pause" : "Play"}
                     >
                       {animationState.isPlaying ? (
-                        <Pause className="w-[14px] h-[14px]" />
+                        <Pause className="w-[12px] h-[12px] sm:w-[14px] sm:h-[14px]" />
                       ) : (
-                        <Play className="w-[14px] h-[14px]" />
+                        <Play className="w-[12px] h-[12px] sm:w-[14px] sm:h-[14px]" />
                       )}
                     </Button>
                     <Button
                       variant="outline"
                       size="icon"
-                      className="h-7 w-7 p-0"
+                      className="h-6 w-6 sm:h-7 sm:w-7 p-0"
                       onClick={resetAnimation}
                       disabled={isLoading || processedDrivers.length === 0}
                       title="Restart"
                     >
-                      <RotateCcw className="w-[14px] h-[14px]" />
+                      <RotateCcw className="w-[12px] h-[12px] sm:w-[14px] sm:h-[14px]" />
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
-                      className="h-7 px-2 text-xs leading-none"
+                      className="h-6 sm:h-7 px-2 text-[10px] sm:text-xs leading-none"
                       onClick={() => {
                         cameraRef.current = { zoom: 1, panX: 0, panY: 0 };
                         render();
@@ -842,9 +842,11 @@ export function TrackVisualization({}: TrackVisualizationProps) {
                     </Button>
                   </div>
 
-                  <div className="flex items-center gap-3 flex-nowrap">
-                    <div className="flex items-center gap-2 w-56 shrink-0">
-                      <span className="text-xs text-zinc-300">Progress</span>
+                  <div className="flex items-center gap-2 sm:gap-3 flex-wrap sm:flex-nowrap">
+                    <div className="flex items-center gap-2 w-40 sm:w-56 shrink-0">
+                      <span className="text-xs text-zinc-300 select-none">
+                        Progress
+                      </span>
                       <Slider
                         value={[animationState.progress * 100]}
                         onValueChange={(value) => {
@@ -859,14 +861,17 @@ export function TrackVisualization({}: TrackVisualizationProps) {
                         }}
                         max={100}
                         step={1}
-                        className="w-full"
+                        className="w-full h-5 sm:h-6 touch-pan-y"
+                        aria-label="Animation progress"
                       />
-                      <span className="text-xs text-zinc-400 w-8 text-right">
+                      <span className="text-[10px] sm:text-xs text-zinc-400 w-7 sm:w-8 text-right tabular-nums select-none">
                         {Math.round(animationState.progress * 100)}%
                       </span>
                     </div>
-                    <div className="flex items-center gap-2 w-40 shrink-0">
-                      <span className="text-xs text-zinc-300">Speed</span>
+                    <div className="flex items-center gap-2 w-36 sm:w-48 shrink-0">
+                      <span className="text-[10px] sm:text-xs text-zinc-300 select-none">
+                        Speed
+                      </span>
                       <Slider
                         value={[animationState.speed]}
                         onValueChange={(value) =>
@@ -878,9 +883,10 @@ export function TrackVisualization({}: TrackVisualizationProps) {
                         min={0.1}
                         max={3}
                         step={0.1}
-                        className="w-full"
+                        className="w-full h-5 sm:h-6 touch-pan-y"
+                        aria-label="Playback speed"
                       />
-                      <span className="text-xs text-zinc-400 w-8 text-right">
+                      <span className="text-[10px] sm:text-xs text-zinc-400 w-9 sm:w-10 text-right tabular-nums select-none">
                         {animationState.speed.toFixed(1)}x
                       </span>
                     </div>
