@@ -199,12 +199,12 @@ export default function HomeLanding() {
               Contact
             </h3>
             <div className="space-y-2 text-zinc-300">
-              <p>Get in touch for collaborations</p>
+              <p>Get in touch : I am open to work !</p>
               <a
-                href="mailto:contact@f1telemetry.com"
+                href="mailto:sarthakjhaa11@gmail.com"
                 className="text-amber-400 hover:text-amber-300 transition-colors"
               >
-                contact@f1telemetry.com
+                sarthakjhaa11@gmail.com
               </a>
             </div>
           </div>
@@ -263,10 +263,7 @@ export default function HomeLanding() {
 
         {/* Bottom bar */}
         <div className="mt-8 pt-6 border-t border-zinc-800/40 text-center text-sm text-zinc-400">
-          <p>
-            &copy; 2024 F1 Telemetry Visualizer. Racing data visualization
-            reimagined.
-          </p>
+          <p>&copy; Sarthak Jha 2025. F1 Fastest Lap Simulator</p>
         </div>
       </footer>
     </div>

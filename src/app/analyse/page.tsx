@@ -6,6 +6,7 @@ import { RaceSelector } from "@/components/race-selector/RaceSelector";
 import { DriverSelector } from "@/components/driver-selector/DriverSelector";
 import { TrackVisualization } from "@/components/track-visualization/TrackVisualization";
 import TelemetryPanel from "@/components/telemetry-panel/TelemetryPanel";
+import { Mail, Github, Linkedin, Instagram } from "lucide-react";
 
 const queryClient = new QueryClient();
 
@@ -42,6 +43,83 @@ export default function Analyse() {
             </div>
           </div>
         </main>
+
+        <footer className="mx-auto max-w-6xl px-4 py-12 border-t border-zinc-800/60">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* Contact Info */}
+            <div>
+              <h3 className="text-lg font-semibold text-zinc-100 mb-4 flex items-center gap-2">
+                <Mail className="w-5 h-5 text-amber-400" />
+                Contact
+              </h3>
+              <div className="space-y-2 text-zinc-300">
+                <p>Get in touch : I am open to work !</p>
+                <a
+                  href="mailto:sarthak.jhaa11@gmail.com"
+                  className="text-amber-400 hover:text-amber-300 transition-colors"
+                >
+                  sarthak.jhaa11@gmail.com
+                </a>
+              </div>
+            </div>
+
+            {/* Social Links */}
+            <div>
+              <h3 className="text-lg font-semibold text-zinc-100 mb-4">
+                Connect
+              </h3>
+              <div className="flex flex-col space-y-3">
+                <a
+                  href="https://www.linkedin.com/in/sarthak-jhaa/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-zinc-300 hover:text-fuchsia-400 transition-colors"
+                >
+                  <Linkedin className="w-4 h-4" />
+                  LinkedIn
+                </a>
+                <a
+                  href="https://github.com/sgsjha"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-zinc-300 hover:text-zinc-100 transition-colors"
+                >
+                  <Github className="w-4 h-4" />
+                  GitHub
+                </a>
+                <a
+                  href="https://instagram.com/sarthak.jhaa"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-zinc-300 hover:text-emerald-400 transition-colors"
+                >
+                  <Instagram className="w-4 h-4" />
+                  Instagram
+                </a>
+              </div>
+            </div>
+
+            {/* Project Info */}
+            <div>
+              <h3 className="text-lg font-semibold text-zinc-100 mb-4">
+                Project
+              </h3>
+              <div className="space-y-2 text-zinc-300">
+                <p>Open source F1 telemetry visualizer</p>
+                <div className="flex items-center gap-2 text-sm">
+                  <div className="w-2 h-2 bg-amber-500 rounded-full" />
+                  Built with passion for racing
+                  <div className="w-2 h-2 bg-emerald-500 rounded-full" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom bar */}
+          <div className="mt-8 pt-6 border-t border-zinc-800/40 text-center text-sm text-zinc-400">
+            <p>&copy; Sarthak Jha 2025. F1 Fastest Lap Simulator</p>
+          </div>
+        </footer>
       </div>
       <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
