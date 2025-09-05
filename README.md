@@ -19,8 +19,6 @@ Compare F1 drivers lap-by-lap with a live track canvas and synchronized telemetr
 - Live demo: https://f1-fastest-lap-simulator-web-app.vercel.app/home
 - Analyzer: https://f1-fastest-lap-simulator-web-app.vercel.app/analyse
 
-If your deployment URL differs, update these links here.
-
 ## ✨ Features
 
 - 🗺️ Track visualization: Zoomable canvas with car traces, labels, and a subtle grid background.
@@ -93,12 +91,6 @@ src/
 ## 🔌 Data Source
 
 This project uses the public OpenF1 API for session, driver, lap, and car data.
-
-## 🗺️ Roadmap
-
-- Speed step buttons (+/−) for very small screens
-- Optional in-canvas fastest indicator on car labels
-- Additional charts and export options
 
 ## 🤝 Contributing
 
